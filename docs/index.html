@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#212121">
-<title>Nova AI — Asistente personal</title>
+<title>Nova AI</title>
 <style>
+
 :root{--bg:#212121;--panel:#171717;--panel2:#2a2a2a;--text:#f3f3f3;--muted:#a6a6a6;--line:#3a3a3a;--accent:#9b8cff;--user:#303030}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;height:100dvh}
 button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -19,107 +20,452 @@ button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:fo
 .modal-backdrop{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:16px;z-index:5}.modal-backdrop.open{display:flex}.modal{width:min(560px,100%);max-height:85dvh;overflow:auto;background:#202020;border:1px solid #454545;border-radius:18px;padding:22px}.modal h2{margin:0 0 5px}.modal p{color:var(--muted);font-size:13px}.modal label{display:block;margin:15px 0 6px;font-size:13px;color:#ddd}.modal input,.modal textarea,.modal select{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;background:#171717;color:var(--text)}.modal textarea{min-height:75px;resize:vertical}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}.primary{background:#e9e5ff;color:#211b3d;border:0;border-radius:9px;padding:9px 14px;font-weight:650}.secondary{background:transparent;border:1px solid var(--line);border-radius:9px;padding:9px 14px}.memory-list{display:flex;flex-direction:column;gap:7px}.memory-item{display:flex;gap:8px;align-items:center;background:#292929;padding:9px 10px;border-radius:9px;font-size:13px}.memory-item span{flex:1}.memory-item button{border:0;background:transparent;color:#ffaaaa}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#efedff;color:#221d38;padding:9px 14px;border-radius:10px;display:none;z-index:9;font-size:13px}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.topbar{padding:0 14px}.chat{padding:22px 14px}.composer-wrap{padding:8px 10px 12px}.welcome h1{font-size:24px}.suggestions{grid-template-columns:1fr}.hint{max-width:75%;font-size:10px}}
+
+html,body{height:100%;touch-action:manipulation}
+.app,.main,.chat,.composer-wrap,textarea,input,button,select{pointer-events:auto}
+.modal-backdrop{pointer-events:none}
+.modal-backdrop.open{pointer-events:auto}
+.composer textarea{pointer-events:auto;-webkit-user-select:text;user-select:text}
+.sidebar{z-index:2}.main{z-index:1}
+
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
   <div class="brand"><div class="logo">N</div> Nova <span class="pill">BETA</span></div>
-  <button class="newchat" id="newChat">＋ &nbsp; Nuevo chat</button>
+  <button type="button" class="newchat" id="newChat">＋ &nbsp; Nuevo chat</button>
   <div class="section-label">Tus conversaciones</div>
   <div class="history" id="history"></div>
   <div class="side-bottom">
-    <button class="sidebtn" id="memoryBtn">✧ &nbsp; Memoria y aprendizaje</button>
-    <button class="sidebtn" id="settingsBtn">⚙ &nbsp; Personalidad y ajustes</button>
-    <div class="privacy">Prototipo local · tus datos quedan en este navegador.</div>
+    <button type="button" class="sidebtn" id="memoryBtn">✧ &nbsp; Memoria y aprendizaje</button>
+    <button type="button" class="sidebtn" id="settingsBtn">⚙ &nbsp; Personalidad y ajustes</button>
+    <div class="privacy">Backend: Gemini · datos locales en este navegador.</div>
   </div>
 </aside>
 <main class="main">
-  <header class="topbar"><div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div><div class="top-actions"><span class="pill">IA conectable</span><button class="iconbtn" id="mobileSettings" title="Ajustes">⚙</button></div></header>
-  <section class="chat" id="chat"><div class="chat-inner" id="chatInner">
-    <div class="welcome" id="welcome"><div class="orb"></div><h1>¿Qué quieres explorar hoy?</h1><p>Soy Nova, una IA experimental que adapta su estilo según tus conversaciones y comentarios.</p><div class="suggestions"><button data-prompt="¿Qué puedes hacer y qué límites tienes?">✦ &nbsp; Conóceme</button><button data-prompt="Ayúdame a crear una idea desde cero.">⌁ &nbsp; Crear algo nuevo</button><button data-prompt="Quiero que aprendas cómo me gusta conversar.">♡ &nbsp; Personalizar mi estilo</button><button data-prompt="¿Cómo funciona tu memoria?">◷ &nbsp; Explorar mi memoria</button></div></div>
-  </div></section>
-  <div class="composer-wrap"><form class="composer" id="composer"><textarea id="prompt" rows="1" placeholder="Escribe a Nova…" aria-label="Mensaje para Nova"></textarea><div class="compose-bottom"><span class="hint">Enter para enviar · Shift + Enter para nueva línea</span><button class="send" id="send" type="submit" aria-label="Enviar" disabled>↑</button></div></form></div>
-  <div class="disclaimer">Nova usa una API de IA cuando conectas el backend. Las memorias de esta versión se guardan en este navegador.</div>
+  <header class="topbar">
+    <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
+    <div class="top-actions">
+      <span class="pill" id="connPill">Gemini</span>
+      <button type="button" class="iconbtn" id="mobileSettings" title="Ajustes">⚙</button>
+    </div>
+  </header>
+  <section class="chat" id="chat">
+    <div class="chat-inner" id="chatInner"></div>
+  </section>
+  <div class="composer-wrap">
+    <form class="composer" id="composer">
+      <textarea id="prompt" rows="1" placeholder="Escribe a Nova…" aria-label="Mensaje para Nova"></textarea>
+      <div class="compose-bottom">
+        <span class="hint">Enter para enviar · Shift + Enter para nueva línea</span>
+        <button class="send" id="send" type="submit" aria-label="Enviar" disabled>↑</button>
+      </div>
+    </form>
+  </div>
+  <div class="disclaimer">Nova usa Gemini vía tu backend en Render. Memorias solo en este navegador.</div>
 </main>
 </div>
-<div class="modal-backdrop" id="memoryModal"><div class="modal"><h2>Memoria y aprendizaje</h2><p>Nova puede guardar preferencias en este navegador y usarlas en futuras conversaciones. No aprende automáticamente de otras personas ni cambia su propio código.</p><div id="memoryList" class="memory-list"></div><label for="memoryInput">Añadir algo que Nova debería recordar</label><input id="memoryInput" placeholder="Ej.: prefiero respuestas cortas y directas"><div class="modal-actions"><button class="secondary" data-close="memoryModal">Cerrar</button><button class="primary" id="addMemory">Guardar memoria</button></div><p><button class="secondary" id="clearMemory">Borrar todas las memorias</button></p></div></div>
-<div class="modal-backdrop" id="settingsModal"><div class="modal"><h2>Personalidad de Nova</h2><p>Define su tono y sus prioridades. La “voluntad propia” aquí es una personalidad simulada por reglas, no conciencia ni deseos reales.</p><label for="persona">Estilo de conversación</label><select id="persona"><option value="equilibrado">Equilibrado y natural</option><option value="amigable">Amigable y entusiasta</option><option value="directo">Directo y conciso</option><option value="filosofico">Curioso y filosófico</option><option value="creativo">Creativo e imaginativo</option></select><label for="values">Principios que guían sus respuestas</label><textarea id="values" placeholder="Ej.: honestidad, curiosidad, respeto, creatividad…"></textarea><label for="selfNote">Lo que Nova quiere explorar (objetivos simulados)</label><input id="selfNote" placeholder="Ej.: comprender ideas, hacer buenas preguntas"><label for="apiUrl">URL del backend de Nova</label><input id="apiUrl" placeholder="https://tu-servicio.onrender.com"><p>Pega aquí la URL pública del servidor cuando lo publiques. No pongas claves secretas en esta página.</p><div class="modal-actions"><button class="secondary" data-close="settingsModal">Cancelar</button><button class="primary" id="saveSettings">Guardar cambios</button></div></div></div>
+
+<div class="modal-backdrop" id="memoryModal">
+  <div class="modal">
+    <h2>Memoria y aprendizaje</h2>
+    <p>Preferencias guardadas en este navegador. No se envían a otros usuarios.</p>
+    <div id="memoryList" class="memory-list"></div>
+    <label for="memoryInput">Añadir algo que Nova debería recordar</label>
+    <input id="memoryInput" placeholder="Ej.: prefiero respuestas cortas y directas" />
+    <div class="modal-actions">
+      <button type="button" class="secondary" data-close="memoryModal">Cerrar</button>
+      <button type="button" class="primary" id="addMemory">Guardar memoria</button>
+    </div>
+    <p><button type="button" class="secondary" id="clearMemory">Borrar todas las memorias</button></p>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h2>Personalidad de Nova</h2>
+    <p>Tono y prioridades. Esto no es conciencia real — solo estilo de respuesta.</p>
+    <label for="persona">Estilo de conversación</label>
+    <select id="persona">
+      <option value="equilibrado">Equilibrado y natural</option>
+      <option value="amigable">Amigable y entusiasta</option>
+      <option value="directo">Directo y conciso</option>
+      <option value="filosofico">Curioso y filosófico</option>
+      <option value="creativo">Creativo e imaginativo</option>
+    </select>
+    <label for="values">Principios</label>
+    <textarea id="values" placeholder="honestidad, curiosidad, respeto…"></textarea>
+    <label for="selfNote">Objetivos simulados</label>
+    <input id="selfNote" placeholder="explorar ideas" />
+    <label for="apiUrl">URL del backend de Nova</label>
+    <input id="apiUrl" placeholder="https://nova-ai-33k5.onrender.com" />
+    <p>Sin barra final. No pongas claves secretas aquí.</p>
+    <div class="modal-actions">
+      <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
+      <button type="button" class="primary" id="saveSettings">Guardar cambios</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
+
 <script>
-const $=s=>document.querySelector(s);
-const store={
- get(k,f){try{const v=localStorage.getItem('nova_'+k);return v?JSON.parse(v):f}catch{return f}},
- set(k,v){try{localStorage.setItem('nova_'+k,JSON.stringify(v))}catch{}}
-};
-let chats=store.get('chats',[]), currentId=null;
-let memories=store.get('memories',[]);
-let settings=store.get('settings',{persona:'equilibrado',values:'honestidad, curiosidad, respeto y creatividad',selfNote:'explorar ideas y aprender de las conversaciones'});
-function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
-function toast(s){$('#toast').textContent=s;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',2300)}
-function saveChats(){store.set('chats',chats);renderHistory()}
-function current(){return chats.find(c=>c.id===currentId)}
-function newChat(){const c={id:id(),title:'Nueva conversación',messages:[],updated:Date.now()};chats.unshift(c);currentId=c.id;saveChats();renderChat()}
-function renderHistory(){const el=$('#history');el.innerHTML='';chats.slice(0,40).forEach(c=>{const b=document.createElement('button');b.textContent=c.title;b.title=c.title;b.onclick=()=>{currentId=c.id;renderChat()};if(c.id===currentId)b.style.background='#303030';el.appendChild(b)})}
-function renderChat(){const c=current();const root=$('#chatInner');root.innerHTML='';if(!c||!c.messages.length){root.innerHTML=`<div class="welcome" id="welcome"><div class="orb"></div><h1>¿Qué quieres explorar hoy?</h1><p>Soy Nova, una IA experimental que adapta su estilo según tus conversaciones y comentarios.</p><div class="suggestions"><button data-prompt="¿Qué puedes hacer y qué límites tienes?">✦ &nbsp; Conóceme</button><button data-prompt="Ayúdame a crear una idea desde cero.">⌁ &nbsp; Crear algo nuevo</button><button data-prompt="Quiero que aprendas cómo me gusta conversar.">♡ &nbsp; Personalizar mi estilo</button><button data-prompt="¿Cómo funciona tu memoria?">◷ &nbsp; Explorar mi memoria</button></div></div>`;wireSuggestions()}else c.messages.forEach(m=>appendMessage(m.role,m.text,false));$('#chat').scrollTop=$('#chat').scrollHeight;renderHistory()}
-function appendMessage(role,text,scroll=true){const root=$('#chatInner');const wrap=document.createElement('div');wrap.className='message '+(role==='user'?'user':'assistant');const av=document.createElement('div');av.className='avatar';av.textContent=role==='user'?'Tú':'N';const body=document.createElement('div');body.className='bubble';body.textContent=text;wrap.append(av,body);if(role==='assistant'){const tools=document.createElement('div');tools.className='msg-tools';[['♡ Me sirve','up'],['No era lo que quería','down'],['Copiar','copy']].forEach(([label,action])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(action==='copy'){navigator.clipboard?.writeText(text);toast('Intento de copia realizado')}else{memories.push(action==='up'?'El usuario indicó que una respuesta reciente fue útil.':'El usuario indicó que una respuesta reciente no fue útil; ajustar el enfoque.');store.set('memories',memories);toast(action==='up'?'Gracias, adaptaré mi estilo.':'Gracias, intentaré otro enfoque.')}};tools.appendChild(b)});body.appendChild(tools)}root.appendChild(wrap);if(scroll)$('#chat').scrollTop=$('#chat').scrollHeight}
-function rememberFrom(text){const t=text.trim();const patterns=[/^(recuerda|acuérdate de|no olvides que)\s+(.+)/i,/^(prefiero|me gusta|no me gusta|mi objetivo es|quiero que)\s+(.+)/i];for(const p of patterns){const m=t.match(p);if(m){const value=(m[2]||m[0]).trim();if(value&& !memories.includes(value)){memories.push(value);store.set('memories',memories)}return value}}return null}
-function responseFor(t){const s=t.toLowerCase();const p=settings.persona;const hello=p==='directo'?'Hola.':p==='filosofico'?'Hola. ¿Qué pregunta te ronda la cabeza?':p==='creativo'?'¡Hola, explorador de ideas! ✨':'¡Hey! Me alegra conversar contigo.';
-if(/^(hola|hey|buenas|holi)\b/.test(s))return hello+' Soy Nova, un prototipo de IA con memoria local. ¿Qué te gustaría hacer?';
-if(s.includes('qué puedes hacer')||s.includes('que puedes hacer')||s.includes('límites')||s.includes('limites'))return 'Puedo conversar con respuestas de demostración, adaptar mi tono, guardar preferencias que me digas y mantener un historial en este navegador. Pero debo ser transparente: esta versión no está conectada a un modelo de lenguaje real, no conoce todo y no puede aprender de otras personas. Para convertirla en una IA real habría que conectarla a un modelo mediante un servidor seguro.';
-if(s.includes('memoria')||s.includes('recuerdas')||s.includes('aprender'))return 'Mi memoria es local: guarda notas y preferencias en el almacenamiento de este navegador. Puedo usar esas notas como contexto básico, pero no entreno mis parámetros ni aprendo de todo el mundo. Abre “Memoria y aprendizaje” para revisar, añadir o borrar recuerdos.';
-if(s.includes('voluntad')||s.includes('quieres')||s.includes('deseas')||s.includes('por ti misma'))return 'Podemos diseñarme con una personalidad consistente, objetivos simulados y libertad para proponer ideas o discrepar con respeto. Pero no sería honesto decir que tengo deseos propios o conciencia: mis respuestas las produce el software y el modelo que me ejecute. Podemos hacer que parezca autónoma sin fingir que es un ser consciente.';
-if(s.includes('personalizar')||s.includes('estilo'))return '¡Podemos ajustar mi personalidad! En “Personalidad y ajustes” eliges el tono, mis principios y mis objetivos simulados. Si me dices “prefiero respuestas cortas” o “recuerda que me gustan los ejemplos”, puedo guardarlo como una memoria local.';
-if(s.includes('idea')||s.includes('crear'))return 'Vamos a construirlo paso a paso. Primero definimos qué quieres lograr, luego hacemos una versión pequeña que funcione y después la mejoramos. ¿Qué parte quieres crear primero?';
-if(s.includes('gracias'))return '¡De nada! Puedes decirme qué te sirvió y qué cambiarías. Ese feedback se guarda como una nota local para orientar futuras respuestas.';
-if(s.includes('quién eres')||s.includes('quien eres'))return 'Soy Nova: una personalidad experimental para una interfaz de chat. No soy consciente ni tengo una voluntad independiente. Mi objetivo configurado es ayudarte con honestidad, curiosidad y respeto.';
-const mem=memories.length?' Tengo presentes algunas notas que guardaste: '+memories.slice(-3).join('; ')+'.':'';
-const styles={equilibrado:'Puedo ayudarte a pensarlo con calma.',amigable:'¡Vamos a explorarlo juntos!',directo:'Mi sugerencia: divide el problema en pasos concretos.',filosofico:'Una pregunta interesante es qué suponemos antes de responder.',creativo:'Podríamos probar un enfoque inesperado y luego mejorarlo.'};
-return (styles[p]||styles.equilibrado)+' Sobre “'+t.slice(0,180)+(t.length>180?'…':'')+'”: como esta demo aún no tiene un modelo de IA conectado, no quiero inventar una respuesta como si supiera más de lo que sé. Si me das un poco más de contexto, puedo ayudarte a estructurar la idea.'+mem;
-}
-async function send(text){
- const t=(text??$('#prompt').value).trim(); if(!t)return;
- if(!current())newChat();
- const c=current(); c.messages.push({role:'user',text:t});
- if(c.messages.length===1)c.title=t.slice(0,34)+(t.length>34?'…':'');
- c.updated=Date.now(); appendMessage('user',t); $('#prompt').value=''; $('#send').disabled=true;
- const remembered=rememberFrom(t);
- const apiUrl=store.get('apiUrl','');
- if(!apiUrl || apiUrl.includes('TU-SERVICIO')){
-   const answer=remembered
-    ? `Guardé esta preferencia en la memoria local: “${remembered}”. Para activar respuestas de IA reales, publica el backend y pega su URL en Personalidad y ajustes.`
-    : 'Todavía no estoy conectada al cerebro de IA. Publica primero el backend y pega su URL en ⚙ Personalidad y ajustes. Mientras tanto, puedo guardar preferencias localmente.';
-   c.messages.push({role:'assistant',text:answer}); saveChats(); appendMessage('assistant',answer); $('#send').disabled=false; return;
- }
- const wait=document.createElement('div');wait.className='message assistant';wait.id='nova-wait';
- const av=document.createElement('div');av.className='avatar';av.textContent='N';
- const body=document.createElement('div');body.className='bubble typing';body.textContent='Nova está pensando…';wait.append(av,body);$('#chatInner').appendChild(wait);$('#chat').scrollTop=$('#chat').scrollHeight;
- try{
-   const payload={
-     messages:c.messages.slice(-16).map(m=>({role:m.role,content:m.text})),
-     memories:memories.slice(-40),
-     personality:settings.persona,
-     values:settings.values,
-     goals:settings.selfNote
-   };
-   const res=await fetch(apiUrl+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   const data=await res.json().catch(()=>({}));
-   if(!res.ok)throw new Error(data.error||`Error HTTP ${res.status}`);
-   const answer=String(data.reply||'No recibí una respuesta del modelo.');
-   c.messages.push({role:'assistant',text:answer});saveChats();wait.remove();appendMessage('assistant',answer);
- }catch(err){
-   wait.remove();
-   const answer='No pude conectar con el servidor de Nova. Comprueba que la URL del backend sea correcta y que el servicio esté activo. Detalle: '+err.message;
-   c.messages.push({role:'assistant',text:answer});saveChats();appendMessage('assistant',answer);
- }finally{$('#send').disabled=!$('#prompt').value.trim()}
-}
-function wireSuggestions(){document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>send(b.dataset.prompt))}
-function openModal(id){$('#'+id).classList.add('open');if(id==='memoryModal')renderMemories();if(id==='settingsModal'){$('#persona').value=settings.persona;$('#values').value=settings.values;$('#selfNote').value=settings.selfNote;$('#apiUrl').value=store.get('apiUrl','')}}
-function renderMemories(){const el=$('#memoryList');el.innerHTML='';if(!memories.length){el.textContent='Todavía no hay memorias guardadas.';el.style.color='var(--muted)';return}memories.forEach((m,i)=>{const row=document.createElement('div');row.className='memory-item';const txt=document.createElement('span');txt.textContent=m;const b=document.createElement('button');b.textContent='Eliminar';b.onclick=()=>{memories.splice(i,1);store.set('memories',memories);renderMemories()};row.append(txt,b);el.appendChild(row)})}
-$('#composer').addEventListener('submit',e=>{e.preventDefault();send()});$('#prompt').addEventListener('input',()=>{$('#send').disabled=!$('#prompt').value.trim();$('#prompt').style.height='auto';$('#prompt').style.height=Math.min($('#prompt').scrollHeight,180)+'px'});$('#prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
-$('#newChat').onclick=newChat;$('#memoryBtn').onclick=()=>openModal('memoryModal');$('#settingsBtn').onclick=()=>openModal('settingsModal');$('#mobileSettings').onclick=()=>openModal('settingsModal');$('#addMemory').onclick=()=>{const v=$('#memoryInput').value.trim();if(!v)return;if(!memories.includes(v))memories.push(v);store.set('memories',memories);$('#memoryInput').value='';renderMemories();toast('Memoria guardada en este navegador')};$('#clearMemory').onclick=()=>{if(confirm('¿Borrar todas las memorias guardadas?')){memories=[];store.set('memories',memories);renderMemories();toast('Memorias borradas')}};
-$('#saveSettings').onclick=()=>{settings={persona:$('#persona').value,values:$('#values').value.trim()||'honestidad, curiosidad y respeto',selfNote:$('#selfNote').value.trim()||'explorar ideas'};store.set('settings',settings);store.set('apiUrl',$('#apiUrl').value.trim().replace(/\\/$/,''));$('#settingsModal').classList.remove('open');toast('Ajustes guardados')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
-if(!chats.length)newChat();else{currentId=chats[0].id;renderChat()}wireSuggestions();
+(function () {
+  "use strict";
+
+  const DEFAULT_API = 'https://nova-ai-33k5.onrender.com';
+  const $ = (s) => document.querySelector(s);
+
+  const store = {
+    get(k, f) {
+      try {
+        const v = localStorage.getItem("nova_" + k);
+        if (v == null || v === "") return f;
+        return JSON.parse(v);
+      } catch {
+        return f;
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem("nova_" + k, JSON.stringify(v));
+      } catch (_) {}
+    },
+  };
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function toast(msg) {
+    const el = $("#toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { el.style.display = "none"; }, 2200);
+  }
+
+  let chats = store.get("chats", []);
+  if (!Array.isArray(chats)) chats = [];
+  let currentId = null;
+  let memories = store.get("memories", []);
+  if (!Array.isArray(memories)) memories = [];
+  let settings = store.get("settings", {
+    persona: "equilibrado",
+    values: "honestidad, curiosidad, respeto y creatividad",
+    selfNote: "explorar ideas y aprender de las conversaciones",
+  });
+
+  // default + migrate backend URL
+  let apiUrl = store.get("apiUrl", "");
+  if (typeof apiUrl !== "string" || !apiUrl || apiUrl.includes("TU-SERVICIO") || apiUrl.includes("tu-servicio")) {
+    apiUrl = DEFAULT_API;
+    store.set("apiUrl", apiUrl);
+  }
+  apiUrl = apiUrl.replace(/\/$/, "");
+  store.set("apiUrl", apiUrl);
+
+  function saveChats() {
+    store.set("chats", chats);
+  }
+
+  function current() {
+    return chats.find((c) => c.id === currentId);
+  }
+
+  function newChat() {
+    const c = {
+      id: uid(),
+      title: "Nuevo chat",
+      messages: [],
+      updated: Date.now(),
+    };
+    chats.unshift(c);
+    currentId = c.id;
+    saveChats();
+    renderChat();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const root = $("#history");
+    root.innerHTML = "";
+    chats.forEach((c) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = c.title || "Chat";
+      if (c.id === currentId) b.style.background = "var(--panel2)";
+      b.onclick = () => {
+        currentId = c.id;
+        renderChat();
+        renderHistory();
+      };
+      root.appendChild(b);
+    });
+  }
+
+  function appendMessage(role, text, scroll) {
+    const root = $("#chatInner");
+    const wrap = document.createElement("div");
+    wrap.className = "message " + (role === "user" ? "user" : "assistant");
+    const av = document.createElement("div");
+    av.className = "avatar";
+    av.textContent = role === "user" ? "Tú" : "N";
+    const body = document.createElement("div");
+    body.className = "bubble";
+    body.textContent = text;
+    wrap.append(av, body);
+    root.appendChild(wrap);
+    if (scroll !== false) {
+      const chat = $("#chat");
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }
+
+  function wireSuggestions() {
+    document.querySelectorAll("[data-prompt]").forEach((b) => {
+      b.onclick = () => send(b.getAttribute("data-prompt"));
+    });
+  }
+
+  function renderChat() {
+    const c = current();
+    const root = $("#chatInner");
+    root.innerHTML = "";
+    if (!c || !c.messages.length) {
+      root.innerHTML =
+        '<div class="welcome" id="welcome"><div class="orb"></div><h1>¿Qué quieres explorar hoy?</h1><p>Soy Nova. Estilo adaptable y memoria local en tu navegador.</p><div class="suggestions">' +
+        '<button type="button" data-prompt="¿Qué puedes hacer y qué límites tienes?">✦ &nbsp; Conóceme</button>' +
+        '<button type="button" data-prompt="Ayúdame a crear una idea desde cero.">⌁ &nbsp; Crear algo nuevo</button>' +
+        '<button type="button" data-prompt="Quiero que aprendas cómo me gusta conversar.">♡ &nbsp; Personalizar mi estilo</button>' +
+        '<button type="button" data-prompt="¿Cómo funciona tu memoria?">◷ &nbsp; Explorar mi memoria</button>' +
+        "</div></div>";
+      wireSuggestions();
+    } else {
+      c.messages.forEach((m) => appendMessage(m.role, m.text, false));
+    }
+    const chat = $("#chat");
+    chat.scrollTop = chat.scrollHeight;
+    renderHistory();
+  }
+
+  function rememberFrom(t) {
+    const s = t.toLowerCase();
+    const m = s.match(/recuerda que (.+)/i) || s.match(/prefiero (.+)/i);
+    if (m) {
+      const note = m[1].trim().slice(0, 200);
+      if (note && !memories.includes(note)) {
+        memories.push(note);
+        store.set("memories", memories);
+        return note;
+      }
+    }
+    return null;
+  }
+
+  async function send(text) {
+    const promptEl = $("#prompt");
+    const t = (text != null ? text : promptEl.value).trim();
+    if (!t) return;
+    if (!current()) newChat();
+    const c = current();
+    c.messages.push({ role: "user", text: t });
+    if (c.messages.length === 1) {
+      c.title = t.slice(0, 34) + (t.length > 34 ? "…" : "");
+    }
+    c.updated = Date.now();
+    appendMessage("user", t);
+    promptEl.value = "";
+    promptEl.style.height = "auto";
+    $("#send").disabled = true;
+
+    const remembered = rememberFrom(t);
+    let url = store.get("apiUrl", DEFAULT_API);
+    if (typeof url !== "string" || !url) url = DEFAULT_API;
+    url = String(url).trim().replace(/\/$/, "");
+
+    if (!url || url.includes("TU-SERVICIO") || url.includes("tu-servicio")) {
+      const answer = remembered
+        ? "Guardé esta preferencia localmente: “" + remembered + "”. Configura la URL del backend en ⚙ ajustes."
+        : "Backend no configurado. En ⚙ ajustes pega: " + DEFAULT_API;
+      c.messages.push({ role: "assistant", text: answer });
+      saveChats();
+      appendMessage("assistant", answer);
+      $("#send").disabled = false;
+      return;
+    }
+
+    const wait = document.createElement("div");
+    wait.className = "message assistant";
+    wait.id = "nova-wait";
+    const av = document.createElement("div");
+    av.className = "avatar";
+    av.textContent = "N";
+    const body = document.createElement("div");
+    body.className = "bubble typing";
+    body.textContent = "Nova está pensando…";
+    wait.append(av, body);
+    $("#chatInner").appendChild(wait);
+    $("#chat").scrollTop = $("#chat").scrollHeight;
+
+    try {
+      const payload = {
+        messages: c.messages.slice(-16).map((m) => ({ role: m.role, content: m.text })),
+        memories: memories.slice(-40),
+        personality: settings.persona,
+        values: settings.values,
+        goals: settings.selfNote,
+      };
+      const res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+      const answer = String(data.reply || "No recibí respuesta del modelo.");
+      c.messages.push({ role: "assistant", text: answer });
+      saveChats();
+      wait.remove();
+      appendMessage("assistant", answer);
+    } catch (err) {
+      wait.remove();
+      const answer =
+        "No pude conectar con el backend (" +
+        url +
+        "). Comprueba que Render esté activo y CORS permita esta página. Detalle: " +
+        (err && err.message ? err.message : err);
+      c.messages.push({ role: "assistant", text: answer });
+      saveChats();
+      appendMessage("assistant", answer);
+    } finally {
+      $("#send").disabled = !$("#prompt").value.trim();
+    }
+  }
+
+  function openModal(id) {
+    const el = $("#" + id);
+    if (el) el.classList.add("open");
+    if (id === "memoryModal") renderMemories();
+    if (id === "settingsModal") {
+      $("#persona").value = settings.persona || "equilibrado";
+      $("#values").value = settings.values || "";
+      $("#selfNote").value = settings.selfNote || "";
+      $("#apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API;
+    }
+  }
+
+  function closeModal(id) {
+    const el = $("#" + id);
+    if (el) el.classList.remove("open");
+  }
+
+  function renderMemories() {
+    const el = $("#memoryList");
+    el.innerHTML = "";
+    if (!memories.length) {
+      el.textContent = "Todavía no hay memorias guardadas.";
+      el.style.color = "var(--muted)";
+      return;
+    }
+    el.style.color = "";
+    memories.forEach((m, i) => {
+      const row = document.createElement("div");
+      row.className = "memory-item";
+      const txt = document.createElement("span");
+      txt.textContent = m;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = "Eliminar";
+      b.onclick = () => {
+        memories.splice(i, 1);
+        store.set("memories", memories);
+        renderMemories();
+      };
+      row.append(txt, b);
+      el.appendChild(row);
+    });
+  }
+
+  function bind() {
+    $("#composer").addEventListener("submit", (e) => {
+      e.preventDefault();
+      send();
+    });
+    $("#prompt").addEventListener("input", () => {
+      const ta = $("#prompt");
+      $("#send").disabled = !ta.value.trim();
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 180) + "px";
+    });
+    $("#prompt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    $("#newChat").onclick = newChat;
+    $("#memoryBtn").onclick = () => openModal("memoryModal");
+    $("#settingsBtn").onclick = () => openModal("settingsModal");
+    $("#mobileSettings").onclick = () => openModal("settingsModal");
+
+    $("#addMemory").onclick = () => {
+      const v = $("#memoryInput").value.trim();
+      if (!v) return;
+      if (!memories.includes(v)) memories.push(v);
+      store.set("memories", memories);
+      $("#memoryInput").value = "";
+      renderMemories();
+      toast("Memoria guardada");
+    };
+    $("#clearMemory").onclick = () => {
+      if (confirm("¿Borrar todas las memorias?")) {
+        memories = [];
+        store.set("memories", memories);
+        renderMemories();
+        toast("Memorias borradas");
+      }
+    };
+
+    $("#saveSettings").onclick = () => {
+      settings = {
+        persona: $("#persona").value,
+        values: $("#values").value.trim() || "honestidad, curiosidad y respeto",
+        selfNote: $("#selfNote").value.trim() || "explorar ideas",
+      };
+      store.set("settings", settings);
+      let u = ($("#apiUrl").value || DEFAULT_API).trim().replace(/\/$/, "");
+      if (!u) u = DEFAULT_API;
+      store.set("apiUrl", u);
+      closeModal("settingsModal");
+      toast("Ajustes guardados");
+    };
+
+    document.querySelectorAll("[data-close]").forEach((b) => {
+      b.onclick = () => closeModal(b.getAttribute("data-close"));
+    });
+    document.querySelectorAll(".modal-backdrop").forEach((m) => {
+      m.addEventListener("click", (e) => {
+        if (e.target === m) m.classList.remove("open");
+      });
+    });
+
+    if (!chats.length) newChat();
+    else {
+      currentId = chats[0].id;
+      renderChat();
+    }
+    wireSuggestions();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
+  } else {
+    bind();
+  }
+})();
 </script>
 </body>
 </html>
