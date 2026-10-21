@@ -28,6 +28,33 @@ html,body{height:100%;touch-action:manipulation}
 .composer textarea{pointer-events:auto;-webkit-user-select:text;user-select:text}
 .sidebar{z-index:2}.main{z-index:1}
 
+
+/* long message layout fixes */
+.message{width:100%;max-width:100%;min-width:0}
+.message.assistant{max-width:100%}
+.message.user{max-width:100%}
+.message .bubble{
+  max-width:min(100%,640px);
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  white-space:pre-wrap;
+  line-height:1.55;
+  overflow-x:hidden;
+}
+.message.assistant .bubble{
+  flex:1;
+  max-width:calc(100% - 48px);
+  padding:4px 2px 8px 0;
+  color:var(--text);
+}
+.message.user .bubble{
+  max-width:min(92%,560px);
+}
+.message .bubble a{color:var(--accent);word-break:break-all}
+.chat-inner{width:100%;max-width:760px;padding:0 4px;box-sizing:border-box}
+.chat{overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
 </style>
 </head>
 <body>
@@ -214,12 +241,13 @@ html,body{height:100%;touch-action:manipulation}
     av.textContent = role === "user" ? "Tú" : "N";
     const body = document.createElement("div");
     body.className = "bubble";
-    body.textContent = text;
+    // safe text; keep newlines (CSS pre-wrap). strip accidental huge runs of spaces.
+    body.textContent = String(text || "").replace(/\r\n/g, "\n").replace(/[^\S\n]{3,}/g, "  ");
     wrap.append(av, body);
     root.appendChild(wrap);
     if (scroll !== false) {
       const chat = $("#chat");
-      chat.scrollTop = chat.scrollHeight;
+      requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
     }
   }
 
