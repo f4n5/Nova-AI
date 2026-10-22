@@ -47,7 +47,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .bubble.typing{color:var(--muted)}
 .msg-tools{display:flex;gap:6px;margin-top:8px}
 .msg-tools button{font-size:.72rem;padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:#fafafa;color:var(--muted)}
-.bubble a{color:#4f46e5;text-decoration:underline;word-break:break-all}
+.bubble em{font-style:italic}.bubble strong{font-weight:700}.bubble a{color:#4f46e5;text-decoration:underline;word-break:break-all}
 .code-block{margin:.55em 0;border:1px solid #2a2f3d;border-radius:12px;overflow:hidden;background:#0f1117}
 .code-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#1a1d27;color:#c8c8d0;font-size:.72rem;gap:8px}
 .code-head button{padding:4px 8px;border-radius:6px;background:#2a2f3d;color:#e8e8f0;font-size:.72rem}
@@ -75,19 +75,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .secondary{padding:9px 14px;border-radius:10px;border:1px solid var(--border2);background:#fafafa;font-size:.88rem}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#221d38;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60;font-size:.85rem;max-width:90vw}
 @media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 10px calc(12px + env(safe-area-inset-bottom,0px))}}
-</style>
+.tool.listening{background:#fee2e2;border-color:#f87171;animation:micpulse 1.2s ease-in-out infinite}@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}70%{box-shadow:0 0 0 8px transparent}}</style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v24.1</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v25</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
   <div class="side-bottom">
     <button type="button" class="sidebtn" id="memoryBtn">Memoria</button>
     <button type="button" class="sidebtn" id="settingsBtn">Ajustes</button>
-    <div class="privacy">Gemini · v24.1 media</div>
+    <div class="privacy">Gemini · v25 media</div>
   </div>
 </aside>
 <main class="main">
@@ -106,6 +106,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </div>
   </header>
   <section class="chat" id="chat"><div class="chat-inner" id="chatInner"></div></section>
+  <div class="voice-banner" id="parlantBanner" style="display:none;max-width:720px;margin:0 auto 8px;padding:8px 12px;border-radius:12px;background:#ebe4ff;color:#5b4bb0;font-size:.82rem;text-align:center">🔊 Parlante ON — di <b>Hey Nova</b> + tu pedido</div>
   <div class="composer-wrap">
     <form class="composer" id="composer">
       <div class="attach-bar" id="attachBar"><img id="attachPrev" alt=""/><span id="attachName">imagen</span><button type="button" class="secondary" id="btnClearImg" style="padding:4px 8px;font-size:.75rem">Quitar</button></div>
@@ -115,10 +116,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
         <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
         <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
+        <button type="button" class="tool" id="btnParlant" title="Parlante Hey Nova">🔊</button>
         <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">v24.1 · 🖼 subir · ✨ generar · 🎤 dictar · Enter envía</div>
+    <div class="composer-hint">v25 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
   </div>
 </main>
 </div>
@@ -148,7 +150,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v24.1";
+  var VERSION = "v25";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -175,17 +177,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     var src = String(text || "");
     var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
     var last = 0, m;
+    function appendFormatted(parent, text) {
+      // **bold** then *italic*, then URLs — order matters
+      var s = String(text || "");
+      var re = /(\*\*([^*]+)\*\*|\*([^*]+)\*|https?:\/\/[^\s<>"']+)/g;
+      var last = 0, m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) parent.appendChild(document.createTextNode(s.slice(last, m.index)));
+        if (m[0].indexOf("http") === 0) {
+          var a = document.createElement("a");
+          a.href = m[0]; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = m[0];
+          parent.appendChild(a);
+        } else if (m[2] != null) {
+          var b = document.createElement("strong"); b.textContent = m[2]; parent.appendChild(b);
+        } else if (m[3] != null) {
+          var iel = document.createElement("em"); iel.textContent = m[3]; parent.appendChild(iel);
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < s.length) parent.appendChild(document.createTextNode(s.slice(last)));
+    }
     function addText(chunk) {
       if (!chunk) return;
-      var div = document.createElement("div"); div.style.whiteSpace = "pre-wrap";
-      var urlRe = /(https?:\/\/[^\s<>"']+)/g;
-      var idx = 0, um;
-      while ((um = urlRe.exec(chunk))) {
-        if (um.index > idx) div.appendChild(document.createTextNode(chunk.slice(idx, um.index)));
-        var a = document.createElement("a"); a.href = um[1]; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = um[1];
-        div.appendChild(a); idx = um.index + um[1].length;
-      }
-      if (idx < chunk.length) div.appendChild(document.createTextNode(chunk.slice(idx)));
+      var div = document.createElement("div");
+      div.style.whiteSpace = "pre-wrap";
+      appendFormatted(div, chunk);
       container.appendChild(div);
     }
     while ((m = re.exec(src))) {
@@ -414,6 +430,181 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
   function renderLt() { var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
   function dictationOnce() { var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast("Dictado no disponible"); return; } var rec = new SR(); rec.lang = "es-ES"; rec.interimResults = false; var btn = el("btnMic"); if (btn) btn.classList.add("on"); rec.onresult = function (ev) { var p = el("prompt"); if (p) p.value = ev.results[0][0].transcript; toast("Listo — toca enviar"); }; rec.onerror = function () { toast("Mic error"); }; rec.onend = function () { if (btn) btn.classList.remove("on"); }; try { rec.start(); } catch (e) { toast("No se pudo usar el mic"); if (btn) btn.classList.remove("on"); } }
+
+  // ——— Parlante / Hey Nova (uses default mic + speaker; Bluetooth if OS-routed) ———
+  var parlantOn = false;
+  var parlantRec = null;
+  var parlantBusy = false; // speaking or processing
+  var wakeHeard = false;
+
+  function isWake(text) {
+    var s = String(text || "").toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return /\b(hey\s*nova|ey\s*nova|ei\s*nova|ok\s*nova|hola\s*nova|oye\s*nova)\b/.test(s);
+  }
+  function stripWake(text) {
+    return String(text || "")
+      .replace(/\b(hey|ey|ei|ok|hola|oye)\s*nova[,!.]?\s*/ig, "")
+      .trim();
+  }
+  function setParlantUI(listening) {
+    var btn = el("btnParlant");
+    var ban = el("parlantBanner");
+    if (btn) {
+      btn.classList.toggle("on", parlantOn);
+      btn.classList.toggle("listening", !!listening);
+    }
+    if (ban) {
+      ban.style.display = parlantOn ? "block" : "none";
+      if (parlantOn) {
+        ban.innerHTML = listening
+          ? (wakeHeard ? "🎤 Te escucho… habla tu pedido" : "🔊 Di <b>Hey Nova</b> + pedido")
+          : "🔊 Parlante ON — di <b>Hey Nova</b>";
+      }
+    }
+  }
+  function stopParlantRec() {
+    try { if (parlantRec) { parlantRec.onend = null; parlantRec.stop(); } } catch (e) {}
+    parlantRec = null;
+  }
+  function startParlantListen() {
+    if (!parlantOn || parlantBusy) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Parlante necesita Chrome/Edge"); parlantOn = false; setParlantUI(false); return; }
+    stopParlantRec();
+    try {
+      var rec = new SR();
+      parlantRec = rec;
+      rec.lang = "es-ES";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onstart = function () { setParlantUI(true); };
+      rec.onresult = function (ev) {
+        if (parlantBusy) return;
+        var finalTxt = "";
+        for (var i = ev.resultIndex; i < ev.results.length; i++) {
+          if (ev.results[i].isFinal) finalTxt += ev.results[i][0].transcript;
+        }
+        finalTxt = finalTxt.trim();
+        if (!finalTxt) return;
+
+        if (!wakeHeard) {
+          if (isWake(finalTxt)) {
+            wakeHeard = true;
+            setParlantUI(true);
+            var rest = stripWake(finalTxt);
+            try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+            if (rest.length > 1) {
+              handleParlantCommand(rest);
+            } else {
+              toast("Te escucho…");
+              speakText("Dime");
+            }
+          }
+          return;
+        }
+        // already woke — take the next final phrase as command
+        handleParlantCommand(stripWake(finalTxt) || finalTxt);
+      };
+      rec.onerror = function (ev) {
+        var err = (ev && ev.error) || "";
+        if (err === "not-allowed") {
+          toast("Permite el microfono");
+          parlantOn = false; setParlantUI(false);
+        }
+      };
+      rec.onend = function () {
+        parlantRec = null;
+        if (parlantOn && !parlantBusy) setTimeout(startParlantListen, 280);
+        else setParlantUI(false);
+      };
+      rec.start();
+    } catch (e) {
+      toast("No se pudo iniciar el parlante");
+      parlantOn = false; setParlantUI(false);
+    }
+  }
+  function handleParlantCommand(cmd) {
+    cmd = String(cmd || "").trim();
+    if (!cmd) return;
+    wakeHeard = false;
+    parlantBusy = true;
+    stopParlantRec();
+    setParlantUI(false);
+    // force speak answer
+    autoSpeak = true;
+    // send() will speak if autoSpeak
+    Promise.resolve(send(cmd)).then(function () {
+      // after send finishes, resume listening
+      setTimeout(function () {
+        parlantBusy = false;
+        if (parlantOn) startParlantListen();
+      }, 600);
+    }).catch(function () {
+      parlantBusy = false;
+      if (parlantOn) startParlantListen();
+    });
+  }
+  // Wrap speakText so parlante pauses recognition while talking
+  var _speakBase = speakText;
+  speakText = function (text) {
+    parlantBusy = true;
+    stopParlantRec();
+    try {
+      if (!window.speechSynthesis) {
+        parlantBusy = false;
+        if (parlantOn) setTimeout(startParlantListen, 400);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
+      u.lang = "es-ES";
+      u.onend = function () {
+        // small gap then listen again for next Hey Nova
+        setTimeout(function () {
+          if (!sending) parlantBusy = false;
+          if (parlantOn && !sending) startParlantListen();
+        }, 350);
+      };
+      u.onerror = function () {
+        parlantBusy = false;
+        if (parlantOn) startParlantListen();
+      };
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      parlantBusy = false;
+      if (parlantOn) startParlantListen();
+    }
+  };
+  function toggleParlant() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Usa Chrome o Edge para Hey Nova"); return; }
+    if (parlantOn) {
+      parlantOn = false;
+      wakeHeard = false;
+      parlantBusy = false;
+      stopParlantRec();
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+      setParlantUI(false);
+      toast("Parlante OFF");
+      return;
+    }
+    parlantOn = true;
+    autoSpeak = true;
+    store.set("autoSpeak", true);
+    wakeHeard = false;
+    parlantBusy = false;
+    toast("Parlante ON — di Hey Nova");
+    // brief cue
+    try {
+      var u = new SpeechSynthesisUtterance("Nova lista. Di hey nova.");
+      u.lang = "es-ES"; u.rate = 1.05;
+      window.speechSynthesis.speak(u);
+      u.onend = function () { startParlantListen(); };
+    } catch (e) { startParlantListen(); }
+    setParlantUI(true);
+  }
+
   function bind() {
     var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
     var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
@@ -425,6 +616,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("settingsBtn", function () { openModal("settingsModal"); });
     click("mobileSettings", function () { openModal("settingsModal"); });
     click("btnMic", dictationOnce);
+    click("btnParlant", toggleParlant);
     click("btnImg", function () { var f = el("fileImg"); if (f) f.click(); });
     click("btnClearImg", clearPendingImage);
     click("btnGen", function () {
