@@ -163,7 +163,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         </button>
       </div>
       <div class="tools">
-        <button type="button" class="tool" id="btnSearch" title="Forzar búsqueda">🔍</button>
         <button type="button" class="tool" id="btnImg" title="Imagen">🖼</button>
         <button type="button" class="tool" id="btnMic" title="Voz chat (mic)">🎤</button>
         <button type="button" class="tool" id="btnClearImg" title="Quitar imagen" hidden>✕</button>
@@ -482,9 +481,9 @@ function renderChat(){
   }
   $("#chat").scrollTop=$("#chat").scrollHeight;
   renderHistory();
-}
+  }
 
-async function send(text){
+ async function send(text){
   var promptEl=$("#prompt");
   var t=(text!=null?text:promptEl.value).trim();
   if(!t && !pendingImage)return;
@@ -545,12 +544,7 @@ async function send(text){
   wait.innerHTML='<div class="avatar">N</div><div class="bubble typing"><span class="dots"><span></span><span></span><span></span></span> pensando…</div>';
   $("#chatInner").appendChild(wait); $("#chat").scrollTop=$("#chat").scrollHeight;
 
-  var useSearch=forceSearch; forceSearch=false;
-  try{ var bs=$("#btnSearch"); if(bs) bs.classList.remove("on"); }catch(_e){}
-
-  // drop any leftover typing indicators
-  try{ document.querySelectorAll("#nova-wait").forEach(function(n){n.remove()}); }catch(_e){}
-  wait.id="nova-wait";
+  var useSearch=forceSearch; forceSearch=false; $("#btnSearch").classList.remove("on");
 
   try{
     var opts=store.get("aiOpts",aiOpts)||aiOpts||{};
@@ -561,45 +555,24 @@ async function send(text){
       personality:mode,
       values:settings.values,
       goals:settings.selfNote,
-      useSearch:!!(useSearch || opts.autoSearch!==false),
+      useSearch:useSearch || opts.autoSearch!==false,
       useGoogleSearch:opts.useGoogleSearch!==false,
-      secretHappy:!!secretHappy,
+      secretHappy:secretHappy,
       image:imgPayload
     };
     secretHappy=false;
-
-    var ctrl=typeof AbortController!=="undefined"?new AbortController():null;
-    var timer=ctrl?setTimeout(function(){try{ctrl.abort()}catch(_e){}},90000):null;
-
-    var res=await fetch(url+"/api/chat",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload),
-      signal:ctrl?ctrl.signal:undefined
-    });
-    if(timer)clearTimeout(timer);
-
+    var res=await fetch(url+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     var data=await res.json().catch(function(){return{}});
     if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
     var answer=String(data.reply||"Sin respuesta");
-    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)});
-    saveChats();
-    if(wait && wait.parentNode) wait.remove();
+    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)}); saveChats(); wait.remove();
     appendMessage("assistant",answer,true,null,data.imageUrl?{imageUrl:data.imageUrl}:null);
-    try{
-      if((store.get("aiOpts",aiOpts)||aiOpts||{}).autoSpeak) speakText(answer);
-    }catch(_s){}
+    if((store.get("aiOpts",aiOpts)||aiOpts).autoSpeak) speakText(answer);
   }catch(err){
-    if(wait && wait.parentNode) wait.remove();
-    var msg=(err&&err.name==="AbortError")
-      ? "Tiempo de espera agotado. Render a veces tarda en despertar — reintenta en 20s."
-      : ("No pude conectar ("+url+"): "+(err&&err.message?err.message:err));
-    c.messages.push({role:"assistant",text:msg});
-    saveChats();
-    appendMessage("assistant",msg);
-    try{ toast(String(msg).slice(0,80)); }catch(_e){}
+    wait.remove();
+    var answer="No pude conectar ("+url+"): "+(err&&err.message?err.message:err);
+    c.messages.push({role:"assistant",text:answer}); saveChats(); appendMessage("assistant",answer);
   }finally{
-    try{ document.querySelectorAll("#nova-wait").forEach(function(n){n.remove()}); }catch(_e){}
     $("#send").disabled=!$("#prompt").value.trim()&&!pendingImage;
     renderHistory();
   }
@@ -651,45 +624,21 @@ function openModal(id){var el=$("#"+id); if(el)el.classList.add("open"); if(id==
     }}
 function closeModal(id){var el=$("#"+id); if(el)el.classList.remove("open")}
 
-function on(id, ev, fn){
-  var el = typeof id === "string" ? document.getElementById(id) : id;
-  if(!el) return;
-  if(ev === "click") el.onclick = fn;
-  else el.addEventListener(ev, fn);
-}
 function bind(){
-  try{
-  var ms=$("#modeSelect");
-  if(ms){ ms.value=mode; ms.onchange=function(){mode=$("#modeSelect").value;store.set("mode",mode);toast("Modo: "+mode)}; }
-  on("btnSearch","click",function(){
-    forceSearch=!forceSearch;
-    var b=$("#btnSearch"); if(b) b.classList.toggle("on",forceSearch);
-    toast(forceSearch?"Búsqueda ON para el próximo mensaje":"Búsqueda auto");
-  });
-  var composer=$("#composer");
-  if(composer) composer.addEventListener("submit",function(e){e.preventDefault();send()});
-  var promptEl=$("#prompt");
-  if(promptEl){
-    promptEl.addEventListener("input",function(){
-      var ta=$("#prompt");
-      var sendBtn=$("#send");
-      if(sendBtn) sendBtn.disabled=!ta.value.trim()&&!pendingImage;
-      ta.style.height="auto";
-      ta.style.height=Math.min(ta.scrollHeight,140)+"px";
-    });
-    promptEl.addEventListener("keydown",function(e){
-      if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}
-    });
-  }
-  on("newChat","click",newChat);
-  on("memoryBtn","click",function(){openModal("memoryModal")});
-  on("actionsBtn","click",function(){openModal("actionsModal")});
-  on("settingsBtn","click",function(){openModal("settingsModal")});
-  on("mobileSettings","click",function(){openModal("settingsModal")});
-  on("btnImg","click",function(){var f=$("#fileImg"); if(f) f.click()});
-  var fileImg=$("#fileImg");
-  if(fileImg) fileImg.onchange=function(){if(this.files&&this.files[0])setImageFile(this.files[0]);this.value=""};
-  on("btnClearImg","click",clearImage);
+  $("#modeSelect").value=mode;
+  $("#modeSelect").onchange=function(){mode=$("#modeSelect").value;store.set("mode",mode);toast("Modo: "+mode)};
+  $("#btnSearch").onclick=function(){forceSearch=!forceSearch;$("#btnSearch").classList.toggle("on",forceSearch);toast(forceSearch?"Búsqueda ON para el próximo mensaje":"Búsqueda auto")};
+  $("#composer").addEventListener("submit",function(e){e.preventDefault();send()});
+  $("#prompt").addEventListener("input",function(){var ta=$("#prompt");$("#send").disabled=!ta.value.trim()&&!pendingImage;ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,140)+"px"});
+  $("#prompt").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+  $("#newChat").onclick=newChat;
+  $("#memoryBtn").onclick=function(){openModal("memoryModal")};
+  $("#actionsBtn").onclick=function(){openModal("actionsModal")};
+  $("#settingsBtn").onclick=function(){openModal("settingsModal")};
+  $("#mobileSettings").onclick=function(){openModal("settingsModal")};
+  $("#btnImg").onclick=function(){$("#fileImg").click()};
+  $("#fileImg").onchange=function(){if(this.files&&this.files[0])setImageFile(this.files[0]);this.value=""};
+  $("#btnClearImg").onclick=clearImage;
 
   // —— Voice chat (mic → STT → send → TTS → listen again) ——
   var voiceChatOn = false;
@@ -817,7 +766,7 @@ function bind(){
     }
   };
 
-  on("btnMic","click",function(){
+  $("#btnMic").onclick = function(){
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){ toast("Reconocimiento de voz no soportado — prueba Chrome o Edge"); return; }
 
@@ -840,7 +789,7 @@ function bind(){
     aiOpts = o;
     toast("Voz chat ON — habla con el mic");
     startRecognition();
-  });
+  };
 
 
   $("#ltAdd").onclick=function(){var v=$("#ltInput").value.trim();if(!v)return;if(longTerm.indexOf(v)<0)longTerm.push(v);store.set("longTerm",longTerm);$("#ltInput").value="";renderLt();toast("Memoria larga OK")};
@@ -890,16 +839,6 @@ function bind(){
   };
 
   if(!chats.length)newChat(); else{currentId=chats[0].id;renderChat()}
-  }catch(err){
-    console.error("Nova bind error", err);
-    try{ toast("Error al iniciar UI — reintenta recargar"); }catch(_e){}
-    // emergency: still wire send so chat works
-    try{
-      var c=$("#composer"); if(c) c.addEventListener("submit",function(e){e.preventDefault();send()});
-      var p=$("#prompt"); if(p) p.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
-      var s=$("#send"); if(s) s.onclick=function(e){e.preventDefault();send()};
-    }catch(_e2){}
-  }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind); else bind();
 })();
