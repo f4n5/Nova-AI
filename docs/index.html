@@ -80,7 +80,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v27</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v28</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -120,7 +120,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">v27 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
+    <div class="composer-hint">v28 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
   </div>
 </main>
 </div>
@@ -164,6 +164,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </select>
   <p style="font-size:.75rem;color:var(--muted);margin-top:6px">Nova puede cambiar de voz si lo pide en la charla. Bluetooth usa la salida del sistema.</p>
   <div class="modal-actions">
+    <button type="button" class="secondary" id="btnTestVoice">Probar voz</button>
     <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
     <button type="button" class="primary" id="saveSettings">Guardar</button>
   </div>
@@ -173,7 +174,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v27";
+  var VERSION = "v28";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -380,21 +381,48 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     s = s.replace(/\s+/g, " ").trim();
     return s;
   }
-  function speakText(text) {
+  function speakText(text, opts) {
+    opts = opts || {};
     try {
-      if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
+      if (!window.speechSynthesis) {
+        toast("Este navegador no tiene voces");
+        return;
+      }
       var clean = speechClean(text);
-      if (!clean) return;
+      if (!clean) {
+        if (opts.force) toast("Nada que leer");
+        return;
+      }
+      // Chrome/Android bug: cancel + immediate speak often produces silence
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try { window.speechSynthesis.resume(); } catch (e) {}
+
       var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
       u.lang = "es-ES";
       var tp = toneParams(toneMood || "neutral");
       u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
       u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
       var v = pickVoice();
-      if (v) { u.voice = v; u.lang = v.lang || u.lang; }
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
+      if (v) {
+        try { u.voice = v; u.lang = v.lang || "es-ES"; } catch (e) {}
+      }
+      u.onerror = function (ev) {
+        console.warn("TTS error", ev);
+        toast("Voz bloqueada — toca Probar voz");
+      };
+      // small delay fixes silent speak on many mobile browsers
+      setTimeout(function () {
+        try {
+          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(u);
+        } catch (e2) {
+          toast("No se pudo hablar");
+        }
+      }, 60);
+    } catch (e) {
+      console.warn(e);
+      toast("Error de voz");
+    }
   }
 
   function appendMessage(role, text, scroll, imgUrl) {
@@ -407,7 +435,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       fillRich(body, text);
       if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
       var tools = document.createElement("div"); tools.className = "msg-tools";
-      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
+      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { try { window.speechSynthesis && window.speechSynthesis.resume(); } catch (e) {} speakText(text, { force: true }); };
       var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
       b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); };
       tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools);
@@ -721,44 +749,38 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   }
   // Wrap speakText so parlante pauses recognition while talking
   var _speakBase = speakText;
-  speakText = function (text) {
+  speakText = function (text, opts) {
     parlantBusy = true;
     stopParlantRec();
+    var finished = function () {
+      setTimeout(function () {
+        if (!sending) parlantBusy = false;
+        if (parlantOn && !sending) startParlantListen();
+      }, 350);
+    };
     try {
       if (!window.speechSynthesis) {
-        parlantBusy = false;
-        if (parlantOn) setTimeout(startParlantListen, 400);
+        finished();
         return;
       }
-      window.speechSynthesis.cancel();
       var clean = speechClean(text);
-      if (!clean) {
-        parlantBusy = false;
-        if (parlantOn) setTimeout(startParlantListen, 300);
-        return;
-      }
+      if (!clean) { finished(); return; }
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try { window.speechSynthesis.resume(); } catch (e) {}
       var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
       u.lang = "es-ES";
       var tp = toneParams(toneMood || "neutral");
       u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
       u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
       var v = pickVoice();
-      if (v) { u.voice = v; u.lang = v.lang || u.lang; }
-      u.onend = function () {
-        setTimeout(function () {
-          if (!sending) parlantBusy = false;
-          if (parlantOn && !sending) startParlantListen();
-        }, 350);
-      };
-      u.onerror = function () {
-        parlantBusy = false;
-        if (parlantOn) startParlantListen();
-      };
-      window.speechSynthesis.speak(u);
-    } catch (e) {
-      parlantBusy = false;
-      if (parlantOn) startParlantListen();
-    }
+      if (v) { try { u.voice = v; u.lang = v.lang || u.lang; } catch (e) {} }
+      u.onend = finished;
+      u.onerror = finished;
+      setTimeout(function () {
+        try { window.speechSynthesis.resume(); window.speechSynthesis.speak(u); }
+        catch (e2) { finished(); }
+      }, 60);
+    } catch (e) { finished(); }
   };
 
   function toggleParlant() {
@@ -820,7 +842,63 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
     click("ltAdd", function () { var v = (el("ltInput").value || "").trim(); if (!v) return; if (longTerm.indexOf(v) < 0) longTerm.push(v); store.set("longTerm", longTerm); el("ltInput").value = ""; renderLt(); toast("Guardado"); });
     click("ltClear", function () { if (confirm("Borrar memoria?")) { longTerm = []; store.set("longTerm", longTerm); renderLt(); } });
-    click("saveSettings", function () { settings = { values: (el("values").value || "").trim() || "honestidad, curiosidad", selfNote: (el("selfNote").value || "").trim() || "ayudar" }; store.set("settings", settings); var u = (el("apiUrl").value || DEFAULT_API).trim().replace(/\/$/, ""); if (!u) u = DEFAULT_API; apiUrl = u; store.set("apiUrl", u); autoSpeak = !!(el("optSpeak") && el("optSpeak").checked); store.set("autoSpeak", autoSpeak); if (el("toneMood")) { toneMood = el("toneMood").value || "neutral"; store.set("toneMood", toneMood); } voiceType = (el("voiceType") && el("voiceType").value) || "auto"; voiceName = (el("voiceName") && el("voiceName").value) || ""; store.set("voiceType", voiceType); store.set("voiceName", voiceName); closeModal("settingsModal"); toast("Guardado"); try { speakText("Voz lista"); } catch (e) {} });
+    click("btnTestVoice", function () {
+      autoSpeak = true; store.set("autoSpeak", true);
+      var cb = el("optSpeak"); if (cb) cb.checked = true;
+      // unlock audio on mobile with direct gesture
+      try { window.speechSynthesis && window.speechSynthesis.resume(); } catch (e) {}
+      speakText("Hola, soy Nova. Así suena mi voz.", { force: true });
+      toast("Probando voz…");
+    });
+    click("saveSettings", function () {
+      try {
+        var valuesEl = el("values");
+        var noteEl = el("selfNote");
+        var urlEl = el("apiUrl");
+        settings = {
+          values: (valuesEl && valuesEl.value ? valuesEl.value : "").trim() || "honestidad, curiosidad",
+          selfNote: (noteEl && noteEl.value ? noteEl.value : "").trim() || "ayudar"
+        };
+        store.set("settings", settings);
+
+        var u = (urlEl && urlEl.value ? urlEl.value : DEFAULT_API).trim().replace(/\/$/, "");
+        if (!u) u = DEFAULT_API;
+        apiUrl = u;
+        store.set("apiUrl", u);
+
+        var speakCb = el("optSpeak");
+        autoSpeak = !!(speakCb && speakCb.checked);
+        store.set("autoSpeak", autoSpeak);
+
+        var tm = el("toneMood");
+        if (tm) { toneMood = tm.value || "neutral"; store.set("toneMood", toneMood); }
+
+        var vt = el("voiceType");
+        var vn = el("voiceName");
+        voiceType = (vt && vt.value) || "auto";
+        voiceName = (vn && vn.value) || "";
+        store.set("voiceType", voiceType);
+        store.set("voiceName", voiceName);
+
+        // verify write
+        var check = store.get("apiUrl", "");
+        if (check !== u) {
+          toast("No se pudo guardar (almacenamiento bloqueado)");
+          return;
+        }
+
+        closeModal("settingsModal");
+        toast(autoSpeak ? "Guardado · voz ON" : "Guardado · activa 'Leer respuestas' para oír");
+
+        // test voice only if user wants speech
+        if (autoSpeak) {
+          setTimeout(function () { speakText("Guardado. Nova te escucha.", { force: true }); }, 120);
+        }
+      } catch (err) {
+        console.error(err);
+        toast("Error al guardar: " + (err && err.message ? err.message : err));
+      }
+    });
     document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { closeModal(b.getAttribute("data-close")); }; });
     document.querySelectorAll(".modal-backdrop").forEach(function (m) { m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("open"); }); });
     if (!chats.length) newChat(); else { currentId = chats[0].id; renderChat(); }
