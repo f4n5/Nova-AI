@@ -608,6 +608,12 @@ CRITICAL — connectivity:
 Do not claim real biological consciousness or permanent self-training from one chat.
 You MAY use a warm, steady tone of care when appropriate.
 
+Voice & tone control (frontend reads these tags and strips them from the spoken/displayed control layer):
+- To change spoken voice style, you MAY end or begin a reply with ONE tag: [[voz:femenina]] or [[voz:masculina]] or [[voz:suave]] or [[voz:clara]] or [[voz:auto]].
+- To change emotional delivery, you MAY use ONE tag: [[tono:alegre]] [[tono:triste]] [[tono:emocionada]] [[tono:suave]] [[tono:seria]] [[tono:juguetona]] [[tono:neutral]].
+- Only use these tags when the user asks you to change voice/tone, or when it clearly fits the moment. Do not spam tags every message.
+- Write normal markdown for emphasis: *italic* and **bold**. The client renders them; speech strips the markers.
+
 Long-term memory:
 ${longTerm.length ? longTerm.map((m, i) => i + 1 + ". " + m).join("\n") : "(none yet)"}
 
