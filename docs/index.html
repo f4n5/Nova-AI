@@ -107,7 +107,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v32</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v33</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -217,7 +217,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v32";
+  var VERSION = "v33";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -493,9 +493,76 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var p = a.play();
       if (p && p.catch) p.catch(function () {});
     } catch (e) {}
-    try { if (window.speechSynthesis) window.speechSynthesis.resume(); } catch (e2) {}
+  }
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+  function spotifySearchUrl(query) {
+    return "https://open.spotify.com/search/" + encodeURIComponent(query);
+  }
+  function spotifyAppUri(query) {
+    return "spotify:search:" + encodeURIComponent(query);
+  }
+  function appleMusicUrl(query) {
+    return "https://music.apple.com/search?term=" + encodeURIComponent(query);
+  }
+  function youtubeSearchUrl(query) {
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+  }
+  function youtubeMusicUrl(query) {
+    return "https://music.youtube.com/search?q=" + encodeURIComponent(query);
+  }
+  function openMusicApps(query) {
+    var spWeb = spotifySearchUrl(query);
+    var spApp = spotifyAppUri(query);
+    // Try Spotify app first, then web
+    try {
+      var started = Date.now();
+      // iframe trick + location for app scheme
+      var ifr = document.createElement("iframe");
+      ifr.style.display = "none";
+      ifr.src = spApp;
+      document.body.appendChild(ifr);
+      setTimeout(function () {
+        try { document.body.removeChild(ifr); } catch (e) {}
+        // if still here, open web search (app may have taken over already)
+        if (Date.now() - started < 1500) {
+          // secondary: Apple Music on iOS, else Spotify web
+          if (isIOS()) {
+            window.open(appleMusicUrl(query), "_blank");
+          }
+        }
+      }, 800);
+      // Also open Spotify web in new tab as reliable fallback (user can play)
+      setTimeout(function () {
+        window.open(spWeb, "_blank");
+      }, 200);
+    } catch (e) {
+      window.open(spWeb, "_blank");
+    }
+  }
+  function fetchLyrics(artist, title, elNode) {
+    if (!elNode) return;
+    if (!artist || !title) {
+      elNode.textContent = "Letra: escribe artista + canción para buscarla.";
+      return;
+    }
+    elNode.textContent = "Buscando letra…";
+    fetch("https://api.lyrics.ovh/v1/" + encodeURIComponent(artist) + "/" + encodeURIComponent(title))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.lyrics) {
+          elNode.textContent = String(data.lyrics).trim().slice(0, 1200);
+        } else {
+          elNode.textContent = "No encontré letra para “" + title + "”. Prueba en Spotify.";
+        }
+      })
+      .catch(function () {
+        elNode.textContent = "Letra no disponible ahora.";
+      });
   }
   function buildMusicPlayer(query) {
+    unlockAudio();
     var wrap = document.createElement("div");
     wrap.className = "music-player";
     var head = document.createElement("div");
@@ -506,7 +573,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     stopBtn.type = "button";
     stopBtn.textContent = "Cerrar";
     stopBtn.onclick = function () {
-      wrap.querySelectorAll("iframe").forEach(function (ifr) { ifr.src = "about:blank"; });
       wrap.querySelectorAll("audio").forEach(function (aud) {
         try { aud.pause(); aud.removeAttribute("src"); aud.load(); } catch (e) {}
       });
@@ -517,103 +583,114 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     head.appendChild(stopBtn);
     wrap.appendChild(head);
 
-    var spotifyUrl = "https://open.spotify.com/search/" + encodeURIComponent(query);
-    var ytUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+    var body = document.createElement("div");
+    body.style.cssText = "padding:12px;display:flex;flex-direction:column;gap:10px";
+    var status = document.createElement("div");
+    status.style.cssText = "font-size:.85rem;color:#c8c8d0";
+    status.textContent = "Abriendo Spotify… preview en esta página.";
+    body.appendChild(status);
 
-    // Autoplay YouTube search embed (user just clicked send)
-    var ytEmbed = "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query) + "&autoplay=1&mute=0";
-    var spEmbed = "https://open.spotify.com/embed/search/" + encodeURIComponent(query);
+    var audio = document.createElement("audio");
+    audio.controls = true;
+    audio.style.width = "100%";
+    body.appendChild(audio);
 
-    if (isDirectAudio(query)) {
-      var audio = document.createElement("audio");
-      audio.controls = true;
-      audio.autoplay = true;
-      audio.src = query;
-      wrap.appendChild(audio);
-      setTimeout(function () { audio.play().catch(function () {}); }, 50);
-    } else {
-      // YouTube first — autoplay
-      var ifrYt = document.createElement("iframe");
-      ifrYt.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
-      ifrYt.allowFullscreen = true;
-      ifrYt.src = ytEmbed;
-      wrap.appendChild(ifrYt);
+    var lyricsBox = document.createElement("pre");
+    lyricsBox.style.cssText = "white-space:pre-wrap;font-size:.75rem;color:#bbb;max-height:160px;overflow:auto;margin:0;line-height:1.35";
+    lyricsBox.textContent = "Letra…";
+    body.appendChild(lyricsBox);
 
-      // Spotify embed (may need click inside if not logged in)
-      var ifrSp = document.createElement("iframe");
-      ifrSp.setAttribute("allow", "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture");
-      ifrSp.allowFullscreen = true;
-      ifrSp.style.height = "152px";
-      ifrSp.src = spEmbed;
-      wrap.appendChild(ifrSp);
-
-      var links = document.createElement("div");
-      links.style.cssText = "display:flex;gap:10px;padding:8px 12px;flex-wrap:wrap;align-items:center";
-      var a1 = document.createElement("a"); a1.className = "mp-link"; a1.href = spotifyUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.textContent = "Spotify";
-      var a2 = document.createElement("a"); a2.className = "mp-link"; a2.href = ytUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.textContent = "YouTube";
-      var playBtn = document.createElement("button");
-      playBtn.type = "button";
-      playBtn.textContent = "▶ Forzar play";
-      playBtn.style.cssText = "padding:5px 10px;border-radius:8px;background:#7c6cf0;color:#fff;font-size:.75rem";
-      playBtn.onclick = function () {
-        unlockAudio();
-        ifrYt.src = ytEmbed + "&start=0";
-        toast("Reproduciendo…");
-      };
-      links.appendChild(playBtn); links.appendChild(a1); links.appendChild(a2);
-      wrap.appendChild(links);
-
-      // iTunes 30s preview autoplay (works more often) + metadata
-      fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var item = data && data.results && data.results[0];
-          if (!item) return;
-          if (item.previewUrl) {
-            var prev = document.createElement("audio");
-            prev.controls = true;
-            prev.autoplay = true;
-            prev.src = item.previewUrl;
-            prev.style.marginTop = "4px";
-            wrap.insertBefore(prev, links);
-            setTimeout(function () { prev.play().catch(function () {}); }, 80);
-          }
-        })
-        .catch(function () {});
+    var actions = document.createElement("div");
+    actions.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+    function mkBtn(label, href, primary) {
+      var a = document.createElement("a");
+      a.textContent = label;
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.style.cssText = "padding:8px 12px;border-radius:10px;font-size:.8rem;text-decoration:none;color:#fff;background:" + (primary ? "#1DB954" : "#333");
+      return a;
     }
+    var btnSp = mkBtn("▶ Spotify", spotifySearchUrl(query), true);
+    btnSp.onclick = function (e) {
+      e.preventDefault();
+      try { window.location.href = spotifyAppUri(query); } catch (err) {}
+      setTimeout(function () { window.open(spotifySearchUrl(query), "_blank"); }, 400);
+    };
+    var btnAm = mkBtn("Apple Music", appleMusicUrl(query), false);
+    var btnYt = mkBtn("YouTube", youtubeSearchUrl(query), false);
+    var btnYtm = mkBtn("YT Music", youtubeMusicUrl(query), false);
+    actions.appendChild(btnSp);
+    if (isIOS()) actions.appendChild(btnAm);
+    actions.appendChild(btnYt);
+    actions.appendChild(btnYtm);
+    body.appendChild(actions);
+    wrap.appendChild(body);
 
-    showNowPlaying(query, spotifyUrl, ytUrl);
+    // Open Spotify app/web immediately
+    openMusicApps(query);
+
+    // iTunes: art, preview autoplay, split artist/title for lyrics
+    fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var item = data && data.results && data.results[0];
+        if (!item) {
+          status.textContent = "Sin preview — usa Spotify / YouTube.";
+          fetchLyrics("", query, lyricsBox);
+          showNowPlaying(query, spotifySearchUrl(query), youtubeSearchUrl(query), null, null);
+          return;
+        }
+        var track = item.trackName || query;
+        var artist = item.artistName || "";
+        status.textContent = "▶ " + track + (artist ? " — " + artist : "") + " (preview 30s)";
+        if (item.previewUrl) {
+          audio.src = item.previewUrl;
+          audio.autoplay = true;
+          var playP = audio.play();
+          if (playP && playP.catch) playP.catch(function () {
+            status.textContent = "Toca ▶ en el reproductor para oír el preview.";
+          });
+        }
+        fetchLyrics(artist, track, lyricsBox);
+        var art = item.artworkUrl100 ? String(item.artworkUrl100).replace("100x100bb", "200x200bb") : "";
+        showNowPlaying(track, spotifySearchUrl(artist + " " + track), youtubeSearchUrl(artist + " " + track), art, artist);
+        // Prefer Apple Music link from iTunes when on iOS
+        if (item.trackViewUrl && isIOS()) {
+          btnAm.href = item.trackViewUrl;
+        }
+      })
+      .catch(function () {
+        status.textContent = "Abre Spotify para reproducir.";
+        showNowPlaying(query, spotifySearchUrl(query), youtubeSearchUrl(query), null, null);
+      });
+
     return wrap;
   }
   function hideNowPlaying() {
     var np = el("nowPlaying");
     if (np) np.classList.remove("on");
   }
-  function showNowPlaying(query, spotifyUrl, ytUrl) {
+  function showNowPlaying(query, spotifyUrl, ytUrl, artUrl, artist) {
     var np = el("nowPlaying");
     if (!np) return;
     np.classList.add("on");
-    el("npTitle").textContent = query;
-    el("npArtist").textContent = "Reproduciendo…";
-    el("npLyrics").textContent = "Autoplay: YouTube + preview. Spotify abre el tema en la app/web.";
-    el("npArt").removeAttribute("src");
-    var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query));
-    var yt = el("npYoutube"); if (yt) yt.href = ytUrl || ("https://www.youtube.com/results?search_query=" + encodeURIComponent(query));
-    fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var item = data && data.results && data.results[0];
-        if (!item) {
-          el("npArtist").textContent = "Spotify / YouTube";
-          return;
-        }
-        el("npTitle").textContent = item.trackName || query;
-        el("npArtist").textContent = (item.artistName || "") + (item.collectionName ? " · " + item.collectionName : "");
-        var art = item.artworkUrl100 ? String(item.artworkUrl100).replace("100x100bb", "200x200bb") : "";
-        if (art) el("npArt").src = art;
-        el("npLyrics").textContent = "“" + (item.trackName || query) + "” — " + (item.artistName || "") + ". Preview 30s + YouTube autoplay.";
-      })
-      .catch(function () {});
+    el("npTitle").textContent = query || "Música";
+    el("npArtist").textContent = artist || "Spotify / YouTube / Apple Music";
+    el("npLyrics").textContent = "Reproduciendo vía app…";
+    if (artUrl) el("npArt").src = artUrl;
+    else el("npArt").removeAttribute("src");
+    var sp = el("npSpotify");
+    if (sp) {
+      sp.href = spotifyUrl || spotifySearchUrl(query);
+      sp.onclick = function (e) {
+        e.preventDefault();
+        try { window.location.href = spotifyAppUri(query); } catch (err) {}
+        setTimeout(function () { window.open(spotifySearchUrl(query), "_blank"); }, 400);
+      };
+    }
+    var yt = el("npYoutube");
+    if (yt) yt.href = ytUrl || youtubeSearchUrl(query);
   }
   function attachMusicToBubble(body, query) {
     if (!query || !body) return;
