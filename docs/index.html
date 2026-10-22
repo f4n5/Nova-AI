@@ -80,7 +80,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v28</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v29</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -120,7 +120,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">v28 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
+    <div class="composer-hint">v29 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
   </div>
 </main>
 </div>
@@ -174,7 +174,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v28";
+  var VERSION = "v29";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -381,47 +381,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     s = s.replace(/\s+/g, " ").trim();
     return s;
   }
-  function speakText(text, opts) {
-    opts = opts || {};
+  function speakText(text) {
     try {
-      if (!window.speechSynthesis) {
-        toast("Este navegador no tiene voces");
-        return;
-      }
+      if (!window.speechSynthesis) return;
       var clean = speechClean(text);
-      if (!clean) {
-        if (opts.force) toast("Nada que leer");
-        return;
-      }
-      // Chrome/Android bug: cancel + immediate speak often produces silence
-      try { window.speechSynthesis.cancel(); } catch (e) {}
-      try { window.speechSynthesis.resume(); } catch (e) {}
-
-      var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
+      if (!clean) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(clean.slice(0, 900));
       u.lang = "es-ES";
       var tp = toneParams(toneMood || "neutral");
-      u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
-      u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
+      u.rate = (tp && tp.rate) || 1;
+      u.pitch = (tp && tp.pitch) || 1;
       var v = pickVoice();
       if (v) {
-        try { u.voice = v; u.lang = v.lang || "es-ES"; } catch (e) {}
+        u.voice = v;
+        if (v.lang) u.lang = v.lang;
       }
-      u.onerror = function (ev) {
-        console.warn("TTS error", ev);
-        toast("Voz bloqueada — toca Probar voz");
-      };
-      // small delay fixes silent speak on many mobile browsers
-      setTimeout(function () {
-        try {
-          window.speechSynthesis.resume();
-          window.speechSynthesis.speak(u);
-        } catch (e2) {
-          toast("No se pudo hablar");
-        }
-      }, 60);
-    } catch (e) {
-      console.warn(e);
-      toast("Error de voz");
+      window.speechSynthesis.speak(u);
+    } catch (err) {
+      console.warn("speak", err);
     }
   }
 
@@ -435,7 +413,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       fillRich(body, text);
       if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
       var tools = document.createElement("div"); tools.className = "msg-tools";
-      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { try { window.speechSynthesis && window.speechSynthesis.resume(); } catch (e) {} speakText(text, { force: true }); };
+      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
       var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
       b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); };
       tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools);
@@ -726,6 +704,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       parlantOn = false; setParlantUI(false);
     }
   }
+  function waitSpeechEnd(cb) {
+    var n = 0;
+    var tmr = setInterval(function () {
+      n++;
+      var speaking = false;
+      try { speaking = window.speechSynthesis && window.speechSynthesis.speaking; } catch (e) {}
+      if (!speaking || n > 80) {
+        clearInterval(tmr);
+        if (cb) cb();
+      }
+    }, 250);
+  }
   function handleParlantCommand(cmd) {
     cmd = String(cmd || "").trim();
     if (!cmd) return;
@@ -733,56 +723,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     parlantBusy = true;
     stopParlantRec();
     setParlantUI(false);
-    // force speak answer
     autoSpeak = true;
-    // send() will speak if autoSpeak
     Promise.resolve(send(cmd)).then(function () {
-      // after send finishes, resume listening
-      setTimeout(function () {
+      waitSpeechEnd(function () {
         parlantBusy = false;
         if (parlantOn) startParlantListen();
-      }, 600);
+      });
     }).catch(function () {
       parlantBusy = false;
       if (parlantOn) startParlantListen();
     });
   }
-  // Wrap speakText so parlante pauses recognition while talking
-  var _speakBase = speakText;
-  speakText = function (text, opts) {
-    parlantBusy = true;
-    stopParlantRec();
-    var finished = function () {
-      setTimeout(function () {
-        if (!sending) parlantBusy = false;
-        if (parlantOn && !sending) startParlantListen();
-      }, 350);
-    };
-    try {
-      if (!window.speechSynthesis) {
-        finished();
-        return;
-      }
-      var clean = speechClean(text);
-      if (!clean) { finished(); return; }
-      try { window.speechSynthesis.cancel(); } catch (e) {}
-      try { window.speechSynthesis.resume(); } catch (e) {}
-      var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
-      u.lang = "es-ES";
-      var tp = toneParams(toneMood || "neutral");
-      u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
-      u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
-      var v = pickVoice();
-      if (v) { try { u.voice = v; u.lang = v.lang || u.lang; } catch (e) {} }
-      u.onend = finished;
-      u.onerror = finished;
-      setTimeout(function () {
-        try { window.speechSynthesis.resume(); window.speechSynthesis.speak(u); }
-        catch (e2) { finished(); }
-      }, 60);
-    } catch (e) { finished(); }
-  };
-
   function toggleParlant() {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { toast("Usa Chrome o Edge para Hey Nova"); return; }
@@ -802,14 +753,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     wakeHeard = false;
     parlantBusy = false;
     toast("Parlante ON — di Hey Nova");
-    // brief cue
-    try {
-      var u = new SpeechSynthesisUtterance("Nova lista. Di hey nova.");
-      u.lang = "es-ES"; u.rate = 1.05;
-      window.speechSynthesis.speak(u);
-      u.onend = function () { startParlantListen(); };
-    } catch (e) { startParlantListen(); }
     setParlantUI(true);
+    speakText("Nova lista. Di hey nova.");
+    waitSpeechEnd(function () {
+      if (parlantOn) startParlantListen();
+    });
   }
 
   function bind() {
@@ -845,10 +793,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("btnTestVoice", function () {
       autoSpeak = true; store.set("autoSpeak", true);
       var cb = el("optSpeak"); if (cb) cb.checked = true;
-      // unlock audio on mobile with direct gesture
-      try { window.speechSynthesis && window.speechSynthesis.resume(); } catch (e) {}
-      speakText("Hola, soy Nova. Así suena mi voz.", { force: true });
-      toast("Probando voz…");
+      speakText("Hola, soy Nova. Asi suena mi voz.");
+      toast("Probando voz");
     });
     click("saveSettings", function () {
       try {
@@ -892,7 +838,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
         // test voice only if user wants speech
         if (autoSpeak) {
-          setTimeout(function () { speakText("Guardado. Nova te escucha.", { force: true }); }, 120);
+          speakText("Guardado. Nova te escucha.");
         }
       } catch (err) {
         console.error(err);
