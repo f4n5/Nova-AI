@@ -80,14 +80,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v25</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v27</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
   <div class="side-bottom">
     <button type="button" class="sidebtn" id="memoryBtn">Memoria</button>
     <button type="button" class="sidebtn" id="settingsBtn">Ajustes</button>
-    <div class="privacy">Gemini · v25 media</div>
+    <div class="privacy">Gemini · v26 media</div>
   </div>
 </aside>
 <main class="main">
@@ -120,7 +120,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">v25 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
+    <div class="composer-hint">v27 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
   </div>
 </main>
 </div>
@@ -140,6 +140,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <label>Principios</label><textarea id="values"></textarea>
   <label>Objetivos</label><input id="selfNote" />
   <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:12px"><input type="checkbox" id="optSpeak" /> Leer respuestas en voz</label>
+  <label>Tono / emoción por defecto</label>
+  <select id="toneMood" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="neutral">Neutral</option>
+    <option value="happy">Alegre</option>
+    <option value="calm">Suave / calmada</option>
+    <option value="excited">Emocionada</option>
+    <option value="serious">Seria</option>
+    <option value="playful">Juguetona</option>
+    <option value="sad">Triste</option>
+  </select>
+  <label>Tipo de voz</label>
+  <select id="voiceType" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="auto">Auto (recomendada)</option>
+    <option value="female">Femenina</option>
+    <option value="male">Masculina</option>
+    <option value="soft">Suave / calmada</option>
+    <option value="bright">Clara / energética</option>
+  </select>
+  <label>Voz concreta</label>
+  <select id="voiceName" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="">(según tipo)</option>
+  </select>
+  <p style="font-size:.75rem;color:var(--muted);margin-top:6px">Nova puede cambiar de voz si lo pide en la charla. Bluetooth usa la salida del sistema.</p>
   <div class="modal-actions">
     <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
     <button type="button" class="primary" id="saveSettings">Guardar</button>
@@ -150,7 +173,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v25";
+  var VERSION = "v27";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -222,7 +245,158 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     }
     addText(src.slice(last));
   }
-  function speakText(text) { try { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(text).slice(0, 900)); u.lang = "es-ES"; window.speechSynthesis.speak(u); } catch (e) {} }
+  function listVoices() {
+    try { return window.speechSynthesis ? window.speechSynthesis.getVoices() || [] : []; }
+    catch (e) { return []; }
+  }
+  function scoreVoice(v, type) {
+    var name = ((v && v.name) || "").toLowerCase();
+    var lang = ((v && v.lang) || "").toLowerCase();
+    var local = v && v.localService ? 2 : 0;
+    var es = /es|spa/.test(lang) ? 5 : (/en/.test(lang) ? 1 : 0);
+    var gender = 0;
+    var femaleHints = /female|woman|girl|femin|monica|paulina|sabina|lucia|lucia|zira|ana|elena|maria|carmen|sof[ií]a|isabella|google español|microsoft sabina|microsoft helena/;
+    var maleHints = /male|man|boy|mascul|jorge|pablo|diego|carlos|antonio|david|google español de estados|microsoft pablo|microsoft raul/;
+    var softHints = /soft|calm|gentle|quiet|warm|sabina|monica|helena/;
+    var brightHints = /neural|natural|enhanced|premium|online/;
+    if (type === "female") gender = femaleHints.test(name) ? 6 : (maleHints.test(name) ? -3 : 1);
+    else if (type === "male") gender = maleHints.test(name) ? 6 : (femaleHints.test(name) ? -3 : 1);
+    else if (type === "soft") gender = softHints.test(name) || femaleHints.test(name) ? 5 : 1;
+    else if (type === "bright") gender = brightHints.test(name) ? 5 : 2;
+    else gender = femaleHints.test(name) ? 3 : 2; // auto prefers a clear es voice
+    return es * 10 + gender + local;
+  }
+  function pickVoice() {
+    var voices = listVoices();
+    if (!voices.length) return null;
+    if (voiceName) {
+      for (var i = 0; i < voices.length; i++) {
+        if (voices[i].name === voiceName) return voices[i];
+      }
+    }
+    var type = voiceType || "auto";
+    var ranked = voices.slice().sort(function (a, b) {
+      return scoreVoice(b, type) - scoreVoice(a, type);
+    });
+    return ranked[0] || null;
+  }
+  function populateVoiceSelect() {
+    var sel = el("voiceName");
+    if (!sel) return;
+    var current = voiceName;
+    sel.innerHTML = '<option value="">(según tipo)</option>';
+    var voices = listVoices().slice().sort(function (a, b) {
+      return String(a.lang).localeCompare(String(b.lang)) || String(a.name).localeCompare(String(b.name));
+    });
+    voices.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.name;
+      o.textContent = v.name + " · " + v.lang + (v.localService ? "" : " (net)");
+      if (v.name === current) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+  function applyVoicePreference(label) {
+    // Nova / user asked for a voice style
+    var s = String(label || "").toLowerCase();
+    if (/femen|woman|girl|mujer|female|suave femen/.test(s)) voiceType = "female";
+    else if (/mascul|hombre|male|man|grave/.test(s)) voiceType = "male";
+    else if (/suave|calm|tranq|soft|warm/.test(s)) voiceType = "soft";
+    else if (/energ|clara|bright|viva|rápid|rapid/.test(s)) voiceType = "bright";
+    else if (/auto|default|normal/.test(s)) voiceType = "auto";
+    // exact voice name match
+    var voices = listVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (s && voices[i].name.toLowerCase().indexOf(s) >= 0) {
+        voiceName = voices[i].name;
+        store.set("voiceName", voiceName);
+        break;
+      }
+    }
+    store.set("voiceType", voiceType);
+    toast("Voz: " + (voiceName || voiceType));
+    return pickVoice();
+  }
+  function applyTone(label) {
+    var s = String(label || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (/alegre|feliz|happy|joy|content/.test(s)) toneMood = "happy";
+    else if (/triste|sad|melanc/.test(s)) toneMood = "sad";
+    else if (/enoj|enfad|angry|molesto|ira/.test(s)) toneMood = "angry";
+    else if (/emocion|excited|entusias|animad|hype/.test(s)) toneMood = "excited";
+    else if (/suave|calm|tranq|seren|soft|whisper|susurr/.test(s)) toneMood = "calm";
+    else if (/suspenso|mister|serio|grave/.test(s)) toneMood = "serious";
+    else if (/juguet|playful|divert|brom/.test(s)) toneMood = "playful";
+    else if (/neutral|normal|default/.test(s)) toneMood = "neutral";
+    else toneMood = "neutral";
+    store.set("toneMood", toneMood);
+    return toneMood;
+  }
+  function toneParams(mood) {
+    // rate + pitch for SpeechSynthesisUtterance
+    var map = {
+      happy:   { rate: 1.12, pitch: 1.15 },
+      excited: { rate: 1.22, pitch: 1.25 },
+      sad:     { rate: 0.88, pitch: 0.85 },
+      angry:   { rate: 1.15, pitch: 0.9 },
+      calm:    { rate: 0.92, pitch: 0.95 },
+      serious: { rate: 0.95, pitch: 0.88 },
+      playful: { rate: 1.15, pitch: 1.2 },
+      neutral: { rate: 1.0,  pitch: 1.0 }
+    };
+    return map[mood] || map.neutral;
+  }
+  function stripVoiceDirectives(text) {
+    var out = String(text || "");
+    var m = out.match(/\[\[\s*voz\s*:\s*([^\]]+)\]\]/i) || out.match(/\[\s*voz\s*:\s*([^\]]+)\]/i);
+    if (m) {
+      applyVoicePreference(m[1].trim());
+      out = out.replace(m[0], "").trim();
+    }
+    var n = out.match(/(?:cambio(?:\s+mi)?\s+voz\s+a|prefiero\s+voz|usar[eé]\s+voz)\s+([^\n.]+)/i);
+    if (n) applyVoicePreference(n[1].trim());
+    // tone / emotion tags
+    var t1 = out.match(/\[\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]\]/i)
+          || out.match(/\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]/i);
+    if (t1) {
+      applyTone(t1[1].trim());
+      out = out.replace(t1[0], "").trim();
+    }
+    var t2 = out.match(/(?:hablo\s+con\s+tono|tono\s*:|me\s+pongo\s+)\s*([a-záéíóúñ]+)/i);
+    if (t2) applyTone(t2[1].trim());
+    return out;
+  }
+  function speechClean(text) {
+    var s = stripVoiceDirectives(String(text || ""));
+    // never speak markdown markers or code fences
+    s = s.replace(/```[\s\S]*?```/g, " ");
+    s = s.replace(/`([^`]+)`/g, "$1");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "$1");
+    s = s.replace(/\*([^*]+)\*/g, "$1");
+    s = s.replace(/__([^_]+)__/g, "$1");
+    s = s.replace(/_([^_]+)_/g, "$1");
+    s = s.replace(/[#>*_~`]/g, " ");
+    s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"); // [label](url) -> label
+    s = s.replace(/https?:\/\/\S+/g, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    return s;
+  }
+  function speakText(text) {
+    try {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var clean = speechClean(text);
+      if (!clean) return;
+      var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
+      u.lang = "es-ES";
+      var tp = toneParams(toneMood || "neutral");
+      u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
+      u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
+      var v = pickVoice();
+      if (v) { u.voice = v; u.lang = v.lang || u.lang; }
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
   function appendMessage(role, text, scroll, imgUrl) {
     var root = el("chatInner"); if (!root) return;
     var w = root.querySelector(".welcome"); if (w) w.remove();
@@ -403,7 +577,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       if (timer) clearTimeout(timer);
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
-      var answer = String(data.reply || "Sin respuesta");
+      var answer = stripVoiceDirectives(String(data.reply || "Sin respuesta"));
       var outImg = data.imageUrl || null;
       c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined });
       saveChats();
@@ -426,7 +600,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     }
   }
 
-  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") renderLt(); if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; } }
+  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") renderLt(); if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; var tm = el("toneMood"); if (tm) tm.value = toneMood || "neutral"; var vt = el("voiceType"); if (vt) vt.value = voiceType || "auto"; populateVoiceSelect(); var vn = el("voiceName"); if (vn) vn.value = voiceName || ""; } }
   function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
   function renderLt() { var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
   function dictationOnce() { var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast("Dictado no disponible"); return; } var rec = new SR(); rec.lang = "es-ES"; rec.interimResults = false; var btn = el("btnMic"); if (btn) btn.classList.add("on"); rec.onresult = function (ev) { var p = el("prompt"); if (p) p.value = ev.results[0][0].transcript; toast("Listo — toca enviar"); }; rec.onerror = function () { toast("Mic error"); }; rec.onend = function () { if (btn) btn.classList.remove("on"); }; try { rec.start(); } catch (e) { toast("No se pudo usar el mic"); if (btn) btn.classList.remove("on"); } }
@@ -557,10 +731,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         return;
       }
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
+      var clean = speechClean(text);
+      if (!clean) {
+        parlantBusy = false;
+        if (parlantOn) setTimeout(startParlantListen, 300);
+        return;
+      }
+      var u = new SpeechSynthesisUtterance(clean.slice(0, 1200));
       u.lang = "es-ES";
+      var tp = toneParams(toneMood || "neutral");
+      u.rate = Math.max(0.7, Math.min(1.4, (voiceRate || 1) * tp.rate));
+      u.pitch = Math.max(0.6, Math.min(1.4, tp.pitch));
+      var v = pickVoice();
+      if (v) { u.voice = v; u.lang = v.lang || u.lang; }
       u.onend = function () {
-        // small gap then listen again for next Hey Nova
         setTimeout(function () {
           if (!sending) parlantBusy = false;
           if (parlantOn && !sending) startParlantListen();
@@ -576,6 +760,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       if (parlantOn) startParlantListen();
     }
   };
+
   function toggleParlant() {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { toast("Usa Chrome o Edge para Hey Nova"); return; }
@@ -635,11 +820,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
     click("ltAdd", function () { var v = (el("ltInput").value || "").trim(); if (!v) return; if (longTerm.indexOf(v) < 0) longTerm.push(v); store.set("longTerm", longTerm); el("ltInput").value = ""; renderLt(); toast("Guardado"); });
     click("ltClear", function () { if (confirm("Borrar memoria?")) { longTerm = []; store.set("longTerm", longTerm); renderLt(); } });
-    click("saveSettings", function () { settings = { values: (el("values").value || "").trim() || "honestidad, curiosidad", selfNote: (el("selfNote").value || "").trim() || "ayudar" }; store.set("settings", settings); var u = (el("apiUrl").value || DEFAULT_API).trim().replace(/\/$/, ""); if (!u) u = DEFAULT_API; apiUrl = u; store.set("apiUrl", u); autoSpeak = !!(el("optSpeak") && el("optSpeak").checked); store.set("autoSpeak", autoSpeak); closeModal("settingsModal"); toast("Guardado"); });
+    click("saveSettings", function () { settings = { values: (el("values").value || "").trim() || "honestidad, curiosidad", selfNote: (el("selfNote").value || "").trim() || "ayudar" }; store.set("settings", settings); var u = (el("apiUrl").value || DEFAULT_API).trim().replace(/\/$/, ""); if (!u) u = DEFAULT_API; apiUrl = u; store.set("apiUrl", u); autoSpeak = !!(el("optSpeak") && el("optSpeak").checked); store.set("autoSpeak", autoSpeak); if (el("toneMood")) { toneMood = el("toneMood").value || "neutral"; store.set("toneMood", toneMood); } voiceType = (el("voiceType") && el("voiceType").value) || "auto"; voiceName = (el("voiceName") && el("voiceName").value) || ""; store.set("voiceType", voiceType); store.set("voiceName", voiceName); closeModal("settingsModal"); toast("Guardado"); try { speakText("Voz lista"); } catch (e) {} });
     document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { closeModal(b.getAttribute("data-close")); }; });
     document.querySelectorAll(".modal-backdrop").forEach(function (m) { m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("open"); }); });
     if (!chats.length) newChat(); else { currentId = chats[0].id; renderChat(); }
     console.log("Nova", VERSION, "ready", apiUrl);
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function () { populateVoiceSelect(); };
+    try { listVoices(); } catch (e) {}
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind); else bind();
 })();
