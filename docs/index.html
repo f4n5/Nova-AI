@@ -6,841 +6,283 @@
 <meta name="theme-color" content="#f7f7f8">
 <title>Nova</title>
 <style>
-:root{--bg:#f7f7f8;--sidebar:#f0f0f2;--panel:#fff;--text:#0d0d0d;--muted:#6e6e80;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.12);--accent:#0d0d0d;--user-bg:#ebebf0;--soft:rgba(0,0,0,.04);--font:"Inter","Segoe UI",system-ui,sans-serif;--shadow:0 8px 30px rgba(0,0,0,.06);--violet:#7c6cf0}
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
-button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;border:none;background:none}
+:root{--bg:#f7f7f8;--sidebar:#f0f0f2;--panel:#fff;--text:#0d0d0d;--muted:#6e6e80;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.12);--accent:#0d0d0d;--user-bg:#ebebf0;--soft:rgba(0,0,0,.04);--violet:#7c6cf0;--font:"Inter","Segoe UI",system-ui,sans-serif;--shadow:0 8px 30px rgba(0,0,0,.06)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
-::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#cfcfd6;border-radius:8px}
 .app{height:100dvh;height:100vh;display:grid;grid-template-columns:260px 1fr;overflow:hidden}
 .sidebar{background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;padding:12px;gap:8px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;padding:8px 8px 12px;cursor:default;user-select:none}
-.logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#c4b5fd,#7c6cf0);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.85rem;cursor:pointer;transition:transform .2s}
-.logo:hover{transform:scale(1.06)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;padding:8px}
+.logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#c4b5fd,#7c6cf0);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.85rem}
 .pill{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;background:#ebe4ff;color:#5b4bb0}
-.newchat{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);font-size:.9rem;font-weight:500}
+.newchat{padding:10px 12px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);font-size:.9rem;font-weight:500;text-align:left}
 .newchat:hover{background:#fafafa}
 .section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 8px 4px}
 .history{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.history button{text-align:left;padding:9px 12px;border-radius:10px;font-size:.88rem;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history button{text-align:left;padding:9px 12px;border-radius:10px;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .history button:hover{background:var(--soft)}.history button.active{background:#e4e4ea;font-weight:600}
 .side-bottom{border-top:1px solid var(--border);padding-top:10px;display:grid;gap:6px}
-.sidebtn{text-align:left;padding:9px 12px;border-radius:10px;font-size:.88rem;color:#333}
-.sidebtn:hover{background:var(--soft)}.privacy{font-size:.72rem;color:var(--muted);padding:4px 8px}
-.main{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
-.topbar{flex:0 0 auto;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:2;gap:10px}
-.model{font-weight:650;font-size:.95rem}.model span{color:var(--muted);font-weight:500}
-.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.mode-select{border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:6px 10px;font-size:.82rem}
-.iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--panel);display:grid;place-items:center}
-.iconbtn:hover{background:#fafafa}.iconbtn.on{background:#ebe4ff;border-color:#c4b5fd}
-.chat{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px 16px 8px;-webkit-overflow-scrolling:touch}
-.chat-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-bottom:8px;width:100%}
-.welcome{margin:6vh auto 0;text-align:center;max-width:520px;animation:fadeUp .35s ease}
-.orb{width:56px;height:56px;margin:0 auto 16px;border-radius:18px;background:radial-gradient(circle at 35% 25%,#e9e0ff,#8b7cf0 55%,#5a4bc4);box-shadow:0 12px 40px rgba(124,108,240,.25);animation:pulse 3.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-.welcome h1{font-size:1.5rem;font-weight:650;letter-spacing:-.02em;margin-bottom:8px}
-.welcome p{color:var(--muted);font-size:.95rem;line-height:1.5}
-.suggestions{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left}
-.suggestions button{padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--panel);font-size:.86rem;color:#333;transition:transform .15s,box-shadow .15s}
-.suggestions button:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
-.message{display:flex;gap:12px;align-items:flex-start;width:100%;min-width:0;animation:fadeUp .28s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.message.user{justify-content:flex-end}
-.avatar{flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:700;background:#ebe4ff;color:#5b4bb0;margin-top:2px}
-.message.user .avatar{order:2;background:#e4e4ea;color:#333}
-.bubble{max-width:min(100%,620px);min-width:0;line-height:1.55;font-size:.95rem;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
-.message.user .bubble{background:var(--user-bg);padding:10px 14px;border-radius:18px 18px 6px 18px}
-.message.assistant .bubble{padding:4px 0;max-width:calc(100% - 48px);flex:1}
-.bubble.typing{color:var(--muted);display:flex;align-items:center;gap:8px}
-.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);margin-right:3px;animation:bounce 1.1s infinite ease-in-out}
-.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
-@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
-.thumb{max-width:220px;border-radius:12px;margin-top:8px;border:1px solid var(--border)}
-.composer-wrap{flex:0 0 auto;padding:8px 16px 12px;background:linear-gradient(to top,var(--bg) 65%,transparent);z-index:3}
-.composer{max-width:720px;margin:0 auto;background:var(--panel);border:1px solid var(--border2);border-radius:24px;padding:10px 12px 10px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
-.composer:focus-within{border-color:rgba(124,108,240,.45);box-shadow:0 8px 32px rgba(124,108,240,.12)}
+.sidebtn{text-align:left;padding:10px 12px;border-radius:10px;font-size:.88rem}
+.sidebtn:hover{background:var(--soft)}
+.privacy{font-size:.7rem;color:var(--muted);padding:6px 8px}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
+.topbar{height:52px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border)}
+.model{font-weight:650}.top-actions{display:flex;align-items:center;gap:8px}
+.mode-select{border:1px solid var(--border2);border-radius:10px;padding:6px 10px;background:var(--panel);font-size:.82rem}
+.iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center}
+.chat{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 16px;-webkit-overflow-scrolling:touch}
+.chat-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.welcome{text-align:center;padding:48px 12px;margin:auto}
+.orb{width:56px;height:56px;margin:0 auto 14px;border-radius:18px;background:radial-gradient(circle at 35% 25%,#e4ddff,#8d7bea 55%,#4c3e9d)}
+.welcome h1{font-size:1.45rem;margin-bottom:8px}.welcome p{color:var(--muted);font-size:.92rem;margin-bottom:18px}
+.suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:420px;margin:0 auto}
+.suggestions button{padding:12px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);text-align:left;font-size:.85rem}
+.message{display:flex;gap:10px;align-items:flex-start}.message.user{flex-direction:row-reverse}
+.avatar{width:28px;height:28px;border-radius:50%;background:#ebe4ff;color:#5b4bb0;display:grid;place-items:center;font-size:.72rem;font-weight:700;flex-shrink:0}
+.message.user .avatar{background:#e4e4ea;color:#333}
+.bubble{max-width:min(100%,560px);padding:12px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--border);line-height:1.5;font-size:.95rem;white-space:pre-wrap;word-break:break-word}
+.message.user .bubble{background:var(--user-bg);border-color:transparent}
+.bubble.typing{color:var(--muted)}
+.msg-tools{display:flex;gap:6px;margin-top:8px}
+.msg-tools button{font-size:.72rem;padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:#fafafa;color:var(--muted)}
+.bubble a{color:#4f46e5;text-decoration:underline;word-break:break-all}
+.code-block{margin:.55em 0;border:1px solid #2a2f3d;border-radius:12px;overflow:hidden;background:#0f1117}
+.code-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#1a1d27;color:#c8c8d0;font-size:.72rem;gap:8px}
+.code-head button{padding:4px 8px;border-radius:6px;background:#2a2f3d;color:#e8e8f0;font-size:.72rem}
+.code-block pre{margin:0;padding:12px;overflow:auto;max-height:320px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.45;color:#e8e8f0;white-space:pre}
+.html-preview{margin-top:8px;border:1px solid var(--border2);border-radius:10px;overflow:hidden}
+.html-preview iframe{width:100%;height:260px;border:0;background:#fff}
+.composer-wrap{flex:0 0 auto;padding:8px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:5}
+.composer{max-width:720px;margin:0 auto;background:var(--panel);border:1px solid var(--border2);border-radius:24px;padding:10px 12px;box-shadow:var(--shadow)}
 .composer-row{display:flex;gap:8px;align-items:flex-end}
-.composer textarea{flex:1;border:0;outline:none;resize:none;background:transparent;min-height:24px;max-height:140px;line-height:1.45;font-size:.95rem;padding:6px 0}
-.composer textarea::placeholder{color:#9a9aaa}
-.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.tool{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;font-size:.85rem;color:#555;background:#fafafa}
-.tool:hover,.tool.on{background:#ebe4ff;border-color:#c4b5fd}
-.send{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0}
-.send:disabled{opacity:.28;cursor:default}
+.composer textarea{flex:1;border:0;outline:none;resize:none;background:transparent;min-height:24px;max-height:140px;line-height:1.45;font-size:16px;padding:6px 0}
+.tool{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;background:#fafafa;flex-shrink:0}
+.tool.on{background:#ebe4ff;border-color:#c4b5fd}
+.send{width:44px;height:44px;min-width:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0;font-size:1.1rem}
+.send:disabled{opacity:.35}
 .composer-hint{max-width:720px;margin:8px auto 0;text-align:center;font-size:.72rem;color:var(--muted)}
-.attach-name{font-size:.75rem;color:var(--muted);padding-left:4px}
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:50;pointer-events:none}
-.modal-backdrop.open{display:flex;pointer-events:auto}
-.modal{width:min(520px,100%);max-height:min(85vh,680px);overflow:auto;background:var(--panel);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:fadeUp .22s ease}
-.modal h2{font-size:1.1rem;margin-bottom:6px}.modal p{color:var(--muted);font-size:.88rem;margin-bottom:12px;line-height:1.45}
-.modal label{display:block;font-size:.78rem;color:var(--muted);margin:12px 0 4px}
-.modal input,.modal textarea,.modal select{width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;background:#fafafa;outline:none}
-.modal textarea{min-height:72px;resize:vertical}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
-.primary,.secondary{padding:8px 14px;border-radius:10px;font-size:.88rem;font-weight:600}
-.primary{background:var(--accent);color:#fff}.secondary{border:1px solid var(--border2);color:#333;background:#fff}
-.memory-item{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.88rem}
-.memory-item span{flex:1}.memory-item button{font-size:.75rem;color:var(--muted);padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1f;color:#fff;padding:10px 16px;border-radius:12px;font-size:.85rem;display:none;z-index:60}
-.secret-flash{position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(circle at 50% 40%,rgba(124,108,240,.12),transparent 55%);opacity:0;transition:opacity .6s}
-.secret-flash.show{opacity:1}
-@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 12px 12px}.chat{padding:10px 12px}}
-
-/* rich content */
-.bubble{white-space:normal;word-break:break-word}
-.bubble .md-p{margin:0 0 .55em;white-space:pre-wrap}
-.bubble .md-p:last-child{margin-bottom:0}
-.bubble a.md-link{color:#4f46e5;text-decoration:underline;word-break:break-all}
-.code-block{margin:.6em 0;border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:#0f1117}
-.code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:#1a1d27;color:#c8c8d0;font-size:.72rem}
-.code-head .lang{opacity:.85;text-transform:lowercase}
-.code-actions{display:flex;gap:6px}
-.code-actions button{font-size:.72rem;padding:4px 8px;border-radius:6px;background:#2a2f3d;color:#e8e8f0}
-.code-actions button:hover{background:#3a4155}
-.code-block pre{margin:0;padding:12px;overflow:auto;max-height:360px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.45;color:#e8e8f0;white-space:pre}
-.html-preview{margin-top:8px;border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:#fff}
-.html-preview iframe{width:100%;height:280px;border:0;background:#fff}
-.msg-tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.msg-tools button{font-size:.72rem;padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:var(--panel);color:var(--muted)}
-.msg-tools button:hover{color:var(--text);background:var(--soft)}
-.gen-img{max-width:100%;border-radius:12px;margin-top:8px;border:1px solid var(--border)}
-.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
-.options-grid label.chk{display:flex;align-items:center;gap:8px;font-size:.88rem;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--soft)}
-.toolbar-chips{display:flex;flex-wrap:wrap;gap:6px;max-width:720px;margin:0 auto 8px}
-.toolbar-chips button{font-size:.75rem;padding:6px 10px;border-radius:999px;border:1px solid var(--border2);background:var(--panel);color:var(--muted)}
-.toolbar-chips button.on{background:#ebe4ff;border-color:#c4b5fd;color:#5b4bb0;font-weight:600}
-@media(max-width:720px){.options-grid{grid-template-columns:1fr}}
-
-
-.tool.listening{background:#fee2e2;border-color:#f87171;color:#b91c1c;animation:mic-pulse 1.2s ease-in-out infinite}
-@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.45)}70%{box-shadow:0 0 0 10px rgba(248,113,113,0)}}
-.voice-banner{display:none;max-width:720px;margin:0 auto 8px;padding:8px 12px;border-radius:12px;background:#ebe4ff;color:#5b4bb0;font-size:.82rem;text-align:center}
-.voice-banner.on{display:block}
+.modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--panel);border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:90dvh;overflow:auto;box-shadow:var(--shadow)}
+.modal h2{font-size:1.1rem;margin-bottom:8px}.modal p{font-size:.85rem;color:var(--muted);margin-bottom:12px}
+.modal label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.modal input,.modal textarea{width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa}
+.modal textarea{min-height:70px;resize:vertical}
+.modal-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}
+.primary{padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;font-size:.88rem}
+.secondary{padding:9px 14px;border-radius:10px;border:1px solid var(--border2);background:#fafafa;font-size:.88rem}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#221d38;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60;font-size:.85rem;max-width:90vw}
+@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 10px calc(12px + env(safe-area-inset-bottom,0px))}}
 </style>
 </head>
 <body>
-<div class="secret-flash" id="secretFlash"></div>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo" id="logoTap" title="Nova">N</div> Nova <span class="pill">BETA</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v23</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
   <div class="side-bottom">
-    <button type="button" class="sidebtn" id="memoryBtn">Memoria larga</button>
-    <button type="button" class="sidebtn" id="actionsBtn">Acciones</button>
+    <button type="button" class="sidebtn" id="memoryBtn">Memoria</button>
     <button type="button" class="sidebtn" id="settingsBtn">Ajustes</button>
-    <div class="privacy">Gemini · clima/búsqueda con límites · sin cuenta extra</div>
+    <div class="privacy">Gemini · v23 estable</div>
   </div>
 </aside>
 <main class="main">
   <header class="topbar">
-    <div class="model">Nova <span>· asistente</span></div>
+    <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
     <div class="top-actions">
-      <select class="mode-select" id="modeSelect" title="Personalidad">
+      <select class="mode-select" id="modeSelect">
         <option value="equilibrado">Equilibrado</option>
         <option value="amigable">Amigable</option>
         <option value="directo">Directo</option>
-        <option value="tecnico">Técnico</option>
-        <option value="relajado">Relajado</option>
-        <option value="foco">Foco</option>
+        <option value="filosofico">Filosofico</option>
         <option value="creativo">Creativo</option>
-        <option value="filosofico">Filosófico</option>
+        <option value="tecnico">Tecnico</option>
       </select>
-      <button type="button" class="iconbtn" id="btnSearch" title="Forzar búsqueda web">🔍</button>
-      <button type="button" class="iconbtn" id="mobileSettings" title="Ajustes">⚙️</button>
+      <button type="button" class="iconbtn" id="mobileSettings">⚙</button>
     </div>
   </header>
   <section class="chat" id="chat"><div class="chat-inner" id="chatInner"></div></section>
-  <div class="voice-banner" id="voiceBanner">🎤 Escuchando… habla y pausa — Nova responde en voz</div>
-<div class="composer-wrap">
+  <div class="composer-wrap">
     <form class="composer" id="composer">
-      <div class="attach-name" id="attachName" hidden></div>
       <div class="composer-row">
-        <textarea id="prompt" rows="1" placeholder="Mensaje a Nova… (clima en X, busca Y)" aria-label="Mensaje"></textarea>
-        <button class="send" id="send" type="submit" disabled>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-1.4 1.4L16.2 11H4v2h12.2l-5.6 5.6L12 20l8-8z"/></svg>
-        </button>
-      </div>
-      <div class="tools">
-        <button type="button" class="tool" id="btnImg" title="Imagen">🖼</button>
-        <button type="button" class="tool" id="btnMic" title="Voz chat (mic)">🎤</button>
-        <button type="button" class="tool" id="btnClearImg" title="Quitar imagen" hidden>✕</button>
-        <input type="file" id="fileImg" accept="image/*" hidden />
+        <textarea id="prompt" rows="1" placeholder="Escribe a Nova…"></textarea>
+        <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
+        <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">Enter envía · 🎤 voz chat (habla ↔ Nova) · Chrome/Edge para mic</div>
+    <div class="composer-hint">Enter envia · mic dicta · v23</div>
   </div>
 </main>
 </div>
-
-<div class="modal-backdrop" id="memoryModal">
-  <div class="modal">
-    <h2>Memoria a largo plazo</h2>
-    <p>Se guarda en este navegador y se manda en cada chat para no empezar de cero. Exporta/importa si cambias de dispositivo.</p>
-    <div id="ltList" class="memory-list"></div>
-    <label>Añadir nota durable</label>
-    <input id="ltInput" placeholder="Proyecto en curso, preferencia, nombre…" />
-    <div class="modal-actions">
-      <button type="button" class="secondary" id="ltExport">Exportar</button>
-      <button type="button" class="secondary" id="ltImportBtn">Importar</button>
-      <input type="file" id="ltImport" accept="application/json,.json" hidden />
-      <button type="button" class="secondary" data-close="memoryModal">Cerrar</button>
-      <button type="button" class="primary" id="ltAdd">Guardar</button>
-    </div>
-    <p style="margin-top:12px"><button type="button" class="secondary" id="ltClear">Borrar memoria larga</button></p>
+<div class="modal-backdrop" id="memoryModal"><div class="modal">
+  <h2>Memoria</h2><p>Notas en este navegador.</p>
+  <div id="ltList" style="margin-bottom:10px;font-size:.88rem"></div>
+  <label>Nueva nota</label><input id="ltInput" placeholder="Prefiero respuestas cortas…" />
+  <div class="modal-actions">
+    <button type="button" class="secondary" data-close="memoryModal">Cerrar</button>
+    <button type="button" class="primary" id="ltAdd">Guardar</button>
   </div>
-</div>
-
-<div class="modal-backdrop" id="actionsModal">
-  <div class="modal">
-    <h2>Acciones</h2>
-    <p>Sin cuentas de terceros: acciones locales seguras. Domótica/correo real necesitarían tus propias APIs.</p>
-    <div class="modal-actions" style="justify-content:flex-start">
-      <button type="button" class="secondary" id="actCopy">Copiar último reply</button>
-      <button type="button" class="secondary" id="actDownload">Descargar chat .txt</button>
-      <button type="button" class="secondary" id="actMailto">Borrador mailto</button>
-    </div>
-    <div class="modal-actions"><button type="button" class="primary" data-close="actionsModal">Cerrar</button></div>
+  <p style="margin-top:12px"><button type="button" class="secondary" id="ltClear">Borrar todo</button></p>
+</div></div>
+<div class="modal-backdrop" id="settingsModal"><div class="modal">
+  <h2>Ajustes</h2>
+  <label>URL backend</label><input id="apiUrl" placeholder="https://nova-ai-33k5.onrender.com" />
+  <label>Principios</label><textarea id="values"></textarea>
+  <label>Objetivos</label><input id="selfNote" />
+  <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:12px"><input type="checkbox" id="optSpeak" /> Leer respuestas en voz</label>
+  <div class="modal-actions">
+    <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
+    <button type="button" class="primary" id="saveSettings">Guardar</button>
   </div>
-</div>
-
-<div class="modal-backdrop" id="settingsModal">
-  <div class="modal">
-    <h2>Ajustes & opciones de IA</h2>
-    <label>URL backend</label>
-    <input id="apiUrl" placeholder="https://nova-ai-33k5.onrender.com" />
-    <label>Principios</label>
-    <textarea id="values"></textarea>
-    <label>Objetivos</label>
-    <input id="selfNote" />
-    <label>Modo / personalidad</label>
-    <select id="optMode">
-      <option value="equilibrado">Equilibrado</option>
-      <option value="amigable">Amigable</option>
-      <option value="directo">Directo</option>
-      <option value="filosofico">Filosófico</option>
-      <option value="creativo">Creativo</option>
-      <option value="tecnico">Técnico</option>
-      <option value="relajado">Relajado</option>
-      <option value="foco">Foco</option>
-    </select>
-    <div class="options-grid">
-      <label class="chk"><input type="checkbox" id="optSearch" /> Búsqueda / clima auto</label>
-      <label class="chk"><input type="checkbox" id="optGoogle" /> Google Search (Gemini)</label>
-      <label class="chk"><input type="checkbox" id="optSpeak" /> Leer respuestas en voz</label>
-    </div>
-    <label>Idioma de voz</label>
-    <select id="optVoiceLang">
-      <option value="es-ES">Español (ES)</option>
-      <option value="es-MX">Español (MX)</option>
-      <option value="en-US">English (US)</option>
-      <option value="en-GB">English (UK)</option>
-      <option value="pt-BR">Português (BR)</option>
-    </select>
-    <label>Velocidad de voz (0.8–1.3)</label>
-    <input id="optVoiceRate" type="number" min="0.7" max="1.4" step="0.05" value="1" />
-    <label>Imágenes</label>
-    <select id="optImage">
-      <option value="pollinations">Pollinations (gratis, sin key)</option>
-      <option value="gemini">Gemini Imagen (puede requerir billing)</option>
-      <option value="off">Desactivado</option>
-    </select>
-    <p style="font-size:.8rem;color:var(--muted);margin-top:8px">Di “genera una imagen de …” o usa el chip 🖼 Imagen. Código en ``` se copia; HTML tiene Visualizar. URLs son clicables.</p>
-    <div class="modal-actions">
-      <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
-      <button type="button" class="primary" id="saveSettings">Guardar</button>
-    </div>
-  </div>
-</div>
+</div></div>
 <div class="toast" id="toast"></div>
-
 <script>
-(function(){
-"use strict";
-var DEFAULT_API="https://nova-ai-33k5.onrender.com";
-var $=function(s){return document.querySelector(s)};
-var store={
-  get:function(k,f){try{var v=localStorage.getItem("nova_"+k);if(v==null||v==="")return f;return JSON.parse(v)}catch(e){return f}},
-  set:function(k,v){try{localStorage.setItem("nova_"+k,JSON.stringify(v))}catch(e){}}
-};
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
-function toast(m){var el=$("#toast");el.textContent=m;el.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(function(){el.style.display="none"},2200)}
-
-var chats=store.get("chats",[]); if(!Array.isArray(chats))chats=[];
-var currentId=null;
-var longTerm=store.get("longTerm",[]); if(!Array.isArray(longTerm))longTerm=[];
-var settings=store.get("settings",{values:"honestidad, curiosidad, respeto",selfNote:"ayudar y explorar"});
-var mode=store.get("mode","equilibrado")||"equilibrado";
-var forceSearch=false;
-var pendingImage=null; // {mimeType,data,name}
-var logoTaps=0;
-var secretHappy=false;
-
-var apiUrl=store.get("apiUrl","");
-if(typeof apiUrl!=="string"||!apiUrl||/tu-servicio|TU-SERVICIO/i.test(apiUrl))apiUrl=DEFAULT_API;
-apiUrl=String(apiUrl).replace(/\/$/,""); store.set("apiUrl",apiUrl);
-
-// return visit soft flag
-(function(){
-  var last=store.get("lastVisit",0);
-  var now=Date.now();
-  if(last && (now-last)>1000*60*60*18) secretHappy=true;
-  store.set("lastVisit",now);
-})();
-
-function saveChats(){store.set("chats",chats)}
-function current(){for(var i=0;i<chats.length;i++)if(chats[i].id===currentId)return chats[i];return null}
-
-function newChat(){
-  var c={id:uid(),title:"Nuevo chat",messages:[],updated:Date.now()};
-  chats.unshift(c); currentId=c.id; saveChats(); renderChat(); renderHistory(); $("#prompt").focus();
-}
-
-function renderHistory(){
-  var root=$("#history"); root.innerHTML="";
-  chats.forEach(function(c){
-    var b=document.createElement("button"); b.type="button"; b.textContent=c.title||"Chat";
-    if(c.id===currentId)b.className="active";
-    b.onclick=function(){currentId=c.id;renderChat();renderHistory()};
-    root.appendChild(b);
-  });
-}
-
-function escapeHtml(s){
-  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
-function renderRich(text){
-  var src = String(text||"").replace(/\r\n/g,"\n");
-  var frag = document.createDocumentFragment();
-  // split fenced code blocks
-  var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
-  var last = 0, m;
-  function pushText(chunk){
-    if(!chunk) return;
-    // paragraphs + links
-    var parts = chunk.split(/\n{2,}/);
-    parts.forEach(function(para){
-      var p = document.createElement("div");
-      p.className = "md-p";
-      // linkify urls and keep newlines as <br> via pre-wrap + inline links
+(function () {
+  "use strict";
+  var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
+  var VERSION = "v23";
+  function el(id) { return document.getElementById(id); }
+  var store = {
+    get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
+    set: function (k, v) { try { localStorage.setItem("nova_" + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function toast(msg) { var t = el("toast"); if (!t) return; t.textContent = msg; t.style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = "none"; }, 2400); }
+  var chats = store.get("chats", []); if (!Array.isArray(chats)) chats = [];
+  var currentId = null;
+  var longTerm = store.get("longTerm", []); if (!Array.isArray(longTerm)) longTerm = [];
+  var settings = store.get("settings", { values: "honestidad, curiosidad, respeto", selfNote: "ayudar y explorar" });
+  var mode = store.get("mode", "equilibrado") || "equilibrado";
+  var autoSpeak = !!store.get("autoSpeak", false);
+  var apiUrl = store.get("apiUrl", "");
+  if (typeof apiUrl !== "string" || !apiUrl || /tu-servicio/i.test(apiUrl)) apiUrl = DEFAULT_API;
+  apiUrl = String(apiUrl).replace(/\/$/, ""); store.set("apiUrl", apiUrl);
+  function saveChats() { store.set("chats", chats); }
+  function current() { for (var i = 0; i < chats.length; i++) if (chats[i].id === currentId) return chats[i]; return null; }
+  function newChat() { var c = { id: uid(), title: "Nuevo chat", messages: [], updated: Date.now() }; chats.unshift(c); currentId = c.id; saveChats(); renderChat(); renderHistory(); }
+  function renderHistory() { var root = el("history"); if (!root) return; root.innerHTML = ""; chats.forEach(function (c) { var b = document.createElement("button"); b.type = "button"; b.textContent = c.title || "Chat"; if (c.id === currentId) b.className = "active"; b.onclick = function () { currentId = c.id; renderChat(); renderHistory(); }; root.appendChild(b); }); }
+  function fillRich(container, text) {
+    container.innerHTML = "";
+    var src = String(text || "");
+    var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
+    var last = 0, m;
+    function addText(chunk) {
+      if (!chunk) return;
+      var div = document.createElement("div"); div.style.whiteSpace = "pre-wrap";
       var urlRe = /(https?:\/\/[^\s<>"']+)/g;
       var idx = 0, um;
-      var plain = para;
-      while((um = urlRe.exec(plain))){
-        if(um.index > idx) p.appendChild(document.createTextNode(plain.slice(idx, um.index)));
-        var a = document.createElement("a");
-        a.className = "md-link";
-        a.href = um[1];
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.textContent = um[1];
-        p.appendChild(a);
-        idx = um.index + um[1].length;
+      while ((um = urlRe.exec(chunk))) {
+        if (um.index > idx) div.appendChild(document.createTextNode(chunk.slice(idx, um.index)));
+        var a = document.createElement("a"); a.href = um[1]; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = um[1];
+        div.appendChild(a); idx = um.index + um[1].length;
       }
-      if(idx < plain.length) p.appendChild(document.createTextNode(plain.slice(idx)));
-      frag.appendChild(p);
-    });
-  }
-  while((m = re.exec(src))){
-    pushText(src.slice(last, m.index));
-    last = m.index + m[0].length;
-    var lang = (m[1]||"").toLowerCase() || "code";
-    var code = m[2].replace(/\n$/,"");
-    var box = document.createElement("div");
-    box.className = "code-block";
-    var head = document.createElement("div");
-    head.className = "code-head";
-    var langEl = document.createElement("span");
-    langEl.className = "lang";
-    langEl.textContent = lang;
-    var acts = document.createElement("div");
-    acts.className = "code-actions";
-    var copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.textContent = "Copiar";
-    copyBtn.onclick = function(codeStr){ return function(){
-      navigator.clipboard.writeText(codeStr).then(function(){ toast("Código copiado"); }).catch(function(){
-        var ta=document.createElement("textarea"); ta.value=codeStr; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("Código copiado");
-      });
-    };}(code);
-    acts.appendChild(copyBtn);
-    var isHtml = /^(html|htm|svg)$/i.test(lang) || /^\s*<(!doctype|html|div|section|body|svg)/i.test(code);
-    if(isHtml){
-      var prevBtn = document.createElement("button");
-      prevBtn.type = "button";
-      prevBtn.textContent = "Visualizar";
-      prevBtn.onclick = function(codeStr, boxEl){ return function(){
-        var existing = boxEl.querySelector(".html-preview");
-        if(existing){ existing.remove(); prevBtn.textContent = "Visualizar"; return; }
-        var wrap = document.createElement("div");
-        wrap.className = "html-preview";
-        var iframe = document.createElement("iframe");
-        iframe.sandbox = "allow-scripts allow-same-origin";
-        iframe.srcdoc = codeStr;
-        wrap.appendChild(iframe);
-        boxEl.appendChild(wrap);
-        prevBtn.textContent = "Ocultar";
-      };}(code, box);
-      acts.appendChild(prevBtn);
+      if (idx < chunk.length) div.appendChild(document.createTextNode(chunk.slice(idx)));
+      container.appendChild(div);
     }
-    head.appendChild(langEl);
-    head.appendChild(acts);
-    var pre = document.createElement("pre");
-    pre.textContent = code;
-    box.appendChild(head);
-    box.appendChild(pre);
-    frag.appendChild(box);
-  }
-  pushText(src.slice(last));
-  return frag;
-}
-
-function appendMessage(role,text,scroll,imgUrl,extra){
-  var root=$("#chatInner");
-  var w=root.querySelector(".welcome"); if(w)w.remove();
-  var wrap=document.createElement("div");
-  wrap.className="message "+(role==="user"?"user":"assistant");
-  var av=document.createElement("div"); av.className="avatar"; av.textContent=role==="user"?"Tú":"N";
-  var body=document.createElement("div"); body.className="bubble";
-  if(role==="assistant"){
-    body.appendChild(renderRich(text));
-  } else {
-    body.style.whiteSpace="pre-wrap";
-    body.textContent=String(text||"");
-  }
-  if(imgUrl){
-    var im=document.createElement("img");
-    im.className="gen-img";
-    im.src=imgUrl;
-    im.alt="imagen";
-    body.appendChild(im);
-  }
-  if(extra && extra.imageUrl){
-    var im2=document.createElement("img");
-    im2.className="gen-img";
-    im2.src=extra.imageUrl;
-    im2.alt="generada";
-    body.appendChild(im2);
-  }
-  wrap.appendChild(av); wrap.appendChild(body);
-
-  if(role==="assistant" && text){
-    var tools=document.createElement("div");
-    tools.className="msg-tools";
-    var speak=document.createElement("button");
-    speak.type="button";
-    speak.textContent="🔊 Voz";
-    speak.onclick=function(){ speakText(String(text||"")); };
-    var copy=document.createElement("button");
-    copy.type="button";
-    copy.textContent="Copiar";
-    copy.onclick=function(){
-      navigator.clipboard.writeText(String(text||"")).then(function(){toast("Copiado")});
-    };
-    tools.appendChild(speak);
-    tools.appendChild(copy);
-    body.appendChild(tools);
-  }
-
-  root.appendChild(wrap);
-  if(scroll!==false){var chat=$("#chat"); requestAnimationFrame(function(){chat.scrollTop=chat.scrollHeight})}
-}
-
-function speakText(text){
-  try{
-    if(!window.speechSynthesis){ toast("Voz no disponible en este navegador"); return; }
-    window.speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(String(text).slice(0,1200));
-    var opts=store.get("aiOpts",{});
-    u.lang = (opts.voiceLang||"es-ES");
-    u.rate = Number(opts.voiceRate||1);
-    window.speechSynthesis.speak(u);
-  }catch(e){ toast("No se pudo reproducir voz"); }
-}
-
-function wireSuggestions(){
-  document.querySelectorAll("[data-prompt]").forEach(function(b){
-    b.onclick=function(){send(b.getAttribute("data-prompt"))};
-  });
-}
-
-function renderChat(){
-  var c=current(); var root=$("#chatInner"); root.innerHTML="";
-  if(!c||!c.messages.length){
-    root.innerHTML='<div class="welcome"><div class="orb"></div><h1>¿Qué quieres explorar hoy?</h1><p>Memoria larga, modos, clima/búsqueda, imagen y voz — sin cuentas extra.</p><div class="suggestions">'+
-      '<button type="button" data-prompt="¿Qué puedes hacer ahora?">Capacidades</button>'+
-      '<button type="button" data-prompt="clima en Buenos Aires">Clima</button>'+
-      '<button type="button" data-prompt="busca noticias de inteligencia artificial">Buscar</button>'+
-      '<button type="button" data-prompt="Recuerda que estoy construyendo Nova con vos">Memoria</button>'+
-      '</div></div>';
-    wireSuggestions();
-  } else {
-    c.messages.forEach(function(m){appendMessage(m.role,m.text,false,m.imagePreview)});
-  }
-  $("#chat").scrollTop=$("#chat").scrollHeight;
-  renderHistory();
-  }
-
- async function send(text){
-  var promptEl=$("#prompt");
-  var t=(text!=null?text:promptEl.value).trim();
-  if(!t && !pendingImage)return;
-  if(!t) t="(imagen adjunta)";
-  if(!current())newChat();
-  var c=current();
-  var preview=pendingImage?pendingImage.preview:null;
-  c.messages.push({role:"user",text:t,imagePreview:preview||undefined});
-  if(c.messages.filter(function(m){return m.role==="user"}).length===1)c.title=t.slice(0,34)+(t.length>34?"…":"");
-  c.updated=Date.now();
-  appendMessage("user",t,true,preview);
-  promptEl.value=""; promptEl.style.height="auto"; $("#send").disabled=true;
-
-  // auto long-term harvest
-  var rm=t.match(/recuerda que (.+)/i)||t.match(/guarda (?:esto|que) (.+)/i);
-  if(rm){var note=rm[1].trim().slice(0,240); if(note&&longTerm.indexOf(note)<0){longTerm.push(note);store.set("longTerm",longTerm);toast("Guardado en memoria larga")}}
-
-  var url=store.get("apiUrl",DEFAULT_API)||DEFAULT_API; url=String(url).replace(/\/$/,"");
-  var imgPayload=pendingImage?{mimeType:pendingImage.mimeType,data:pendingImage.data}:null;
-  clearImage();
-
-  var wait=document.createElement("div"); wait.className="message assistant"; wait.id="nova-wait";
-  // Image generation intercept
-  var opts0=store.get("aiOpts",aiOpts)||aiOpts||{};
-  var wantsImageGen=/\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\b.{0,40}\b(imagen|image|img|foto|picture|drawing)\b/i.test(t)
-    || /^\/image\b/i.test(t)
-    || (window.__forceImage && window.__forceImage--);
-  if(wantsImageGen && opts0.imageProvider!=="off"){
-    var imgPrompt=t.replace(/^\/image\s*/i,"").replace(/\b(genera|generar|crea|crear|dibuja|dibujar)\s+(una\s+)?(imagen|image|foto|picture)?\s*(de|of)?\s*/i,"").trim()||t;
-    try{
-      var imgRes;
-      if(opts0.imageProvider==="gemini"){
-        imgRes=await fetch(url+"/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:imgPrompt})});
-        var imgData=await imgRes.json().catch(function(){return{}});
-        if(imgRes.ok && imgData.imageUrl){
-          var answer="Imagen generada: "+imgPrompt;
-          c.messages.push({role:"assistant",text:answer,imageUrl:imgData.imageUrl});
-          saveChats(); wait.remove();
-          appendMessage("assistant",answer,true,null,{imageUrl:imgData.imageUrl});
-          $("#send").disabled=!$("#prompt").value.trim();
-          return;
-        }
+    while ((m = re.exec(src))) {
+      addText(src.slice(last, m.index)); last = m.index + m[0].length;
+      var lang = (m[1] || "code").toLowerCase(); var code = m[2];
+      var box = document.createElement("div"); box.className = "code-block";
+      var head = document.createElement("div"); head.className = "code-head";
+      var span = document.createElement("span"); span.textContent = lang; head.appendChild(span);
+      var copyBtn = document.createElement("button"); copyBtn.type = "button"; copyBtn.textContent = "Copiar";
+      copyBtn.onclick = (function (c) { return function () { if (navigator.clipboard) navigator.clipboard.writeText(c).then(function () { toast("Copiado"); }); }; })(code);
+      head.appendChild(copyBtn);
+      if (/^(html|htm|svg)$/.test(lang) || /^\s*</.test(code)) {
+        var prevBtn = document.createElement("button"); prevBtn.type = "button"; prevBtn.textContent = "Visualizar";
+        prevBtn.onclick = (function (c, boxEl, btn) { return function () { var ex = boxEl.querySelector(".html-preview"); if (ex) { ex.remove(); btn.textContent = "Visualizar"; return; } var wrap = document.createElement("div"); wrap.className = "html-preview"; var ifr = document.createElement("iframe"); ifr.sandbox = "allow-scripts"; ifr.srcdoc = c; wrap.appendChild(ifr); boxEl.appendChild(wrap); btn.textContent = "Ocultar"; }; })(code, box, prevBtn);
+        head.appendChild(prevBtn);
       }
-      // pollinations free
-      var poll="https://image.pollinations.ai/prompt/"+encodeURIComponent(imgPrompt)+"?width=768&height=768&nologo=true";
-      var answer="Imagen generada (Pollinations): "+imgPrompt+"\n"+poll;
-      c.messages.push({role:"assistant",text:answer,imageUrl:poll});
-      saveChats(); wait.remove();
-      appendMessage("assistant",answer,true,null,{imageUrl:poll});
-      if(opts0.autoSpeak) speakText("Imagen generada");
-      $("#send").disabled=!$("#prompt").value.trim();
-      return;
-    }catch(err){
-      // fall through to normal chat
+      var pre = document.createElement("pre"); pre.textContent = code; box.appendChild(head); box.appendChild(pre); container.appendChild(box);
     }
+    addText(src.slice(last));
   }
-
-  wait.innerHTML='<div class="avatar">N</div><div class="bubble typing"><span class="dots"><span></span><span></span><span></span></span> pensando…</div>';
-  $("#chatInner").appendChild(wait); $("#chat").scrollTop=$("#chat").scrollHeight;
-
-  var useSearch=forceSearch; forceSearch=false; $("#btnSearch").classList.remove("on");
-
-  try{
-    var opts=store.get("aiOpts",aiOpts)||aiOpts||{};
-    var payload={
-      messages:c.messages.slice(-16).map(function(m){return{role:m.role,content:m.text}}),
-      memories:[],
-      longTerm:longTerm.slice(-40),
-      personality:mode,
-      values:settings.values,
-      goals:settings.selfNote,
-      useSearch:useSearch || opts.autoSearch!==false,
-      useGoogleSearch:opts.useGoogleSearch!==false,
-      secretHappy:secretHappy,
-      image:imgPayload
-    };
-    secretHappy=false;
-    var res=await fetch(url+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    var data=await res.json().catch(function(){return{}});
-    if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
-    var answer=String(data.reply||"Sin respuesta");
-    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)}); saveChats(); wait.remove();
-    appendMessage("assistant",answer,true,null,data.imageUrl?{imageUrl:data.imageUrl}:null);
-    if((store.get("aiOpts",aiOpts)||aiOpts).autoSpeak) speakText(answer);
-  }catch(err){
-    wait.remove();
-    var answer="No pude conectar ("+url+"): "+(err&&err.message?err.message:err);
-    c.messages.push({role:"assistant",text:answer}); saveChats(); appendMessage("assistant",answer);
-  }finally{
-    $("#send").disabled=!$("#prompt").value.trim()&&!pendingImage;
-    renderHistory();
+  function speakText(text) { try { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(text).slice(0, 900)); u.lang = "es-ES"; window.speechSynthesis.speak(u); } catch (e) {} }
+  function appendMessage(role, text, scroll) {
+    var root = el("chatInner"); if (!root) return;
+    var w = root.querySelector(".welcome"); if (w) w.remove();
+    var wrap = document.createElement("div"); wrap.className = "message " + (role === "user" ? "user" : "assistant");
+    var av = document.createElement("div"); av.className = "avatar"; av.textContent = role === "user" ? "Tu" : "N";
+    var body = document.createElement("div"); body.className = "bubble";
+    if (role === "assistant") { fillRich(body, text); var tools = document.createElement("div"); tools.className = "msg-tools"; var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); }; var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar"; b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); }; tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools); } else { body.textContent = String(text || ""); }
+    wrap.appendChild(av); wrap.appendChild(body); root.appendChild(wrap);
+    if (scroll !== false) { var chat = el("chat"); if (chat) requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; }); }
   }
-}
-
-function clearImage(){
-  pendingImage=null;
-  $("#attachName").hidden=true; $("#attachName").textContent="";
-  $("#btnClearImg").hidden=true;
-}
-function setImageFile(file){
-  if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(){
-    var dataUrl=String(reader.result||"");
-    var b64=dataUrl.split(",")[1]||"";
-    pendingImage={mimeType:file.type||"image/jpeg",data:b64,preview:dataUrl,name:file.name};
-    $("#attachName").hidden=false; $("#attachName").textContent="Imagen: "+file.name;
-    $("#btnClearImg").hidden=false; $("#send").disabled=false;
-  };
-  reader.readAsDataURL(file);
-}
-
-function renderLt(){
-  var el=$("#ltList"); el.innerHTML="";
-  if(!longTerm.length){el.textContent="Vacía — escribí «recuerda que…» o añadí aquí.";el.style.color="var(--muted)";return}
-  el.style.color="";
-  longTerm.forEach(function(m,i){
-    var row=document.createElement("div"); row.className="memory-item";
-    var s=document.createElement("span"); s.textContent=m;
-    var b=document.createElement("button"); b.type="button"; b.textContent="Eliminar";
-    b.onclick=function(){longTerm.splice(i,1);store.set("longTerm",longTerm);renderLt()};
-    row.appendChild(s); row.appendChild(b); el.appendChild(row);
-  });
-}
-
-function openModal(id){var el=$("#"+id); if(el)el.classList.add("open"); if(id==="memoryModal")renderLt(); if(id==="settingsModal"){
-      $("#apiUrl").value=store.get("apiUrl",DEFAULT_API)||DEFAULT_API;
-      $("#values").value=settings.values||"";
-      $("#selfNote").value=settings.selfNote||"";
-      var o=store.get("aiOpts",aiOpts)||aiOpts;
-      $("#optMode").value=store.get("mode","equilibrado")||"equilibrado";
-      $("#optSearch").checked=o.autoSearch!==false;
-      $("#optGoogle").checked=o.useGoogleSearch!==false;
-      $("#optSpeak").checked=!!o.autoSpeak;
-      $("#optVoiceLang").value=o.voiceLang||"es-ES";
-      $("#optVoiceRate").value=o.voiceRate||1;
-      $("#optImage").value=o.imageProvider||"pollinations";
-    }}
-function closeModal(id){var el=$("#"+id); if(el)el.classList.remove("open")}
-
-function bind(){
-  $("#modeSelect").value=mode;
-  $("#modeSelect").onchange=function(){mode=$("#modeSelect").value;store.set("mode",mode);toast("Modo: "+mode)};
-  $("#btnSearch").onclick=function(){forceSearch=!forceSearch;$("#btnSearch").classList.toggle("on",forceSearch);toast(forceSearch?"Búsqueda ON para el próximo mensaje":"Búsqueda auto")};
-  $("#composer").addEventListener("submit",function(e){e.preventDefault();send()});
-  $("#prompt").addEventListener("input",function(){var ta=$("#prompt");$("#send").disabled=!ta.value.trim()&&!pendingImage;ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,140)+"px"});
-  $("#prompt").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
-  $("#newChat").onclick=newChat;
-  $("#memoryBtn").onclick=function(){openModal("memoryModal")};
-  $("#actionsBtn").onclick=function(){openModal("actionsModal")};
-  $("#settingsBtn").onclick=function(){openModal("settingsModal")};
-  $("#mobileSettings").onclick=function(){openModal("settingsModal")};
-  $("#btnImg").onclick=function(){$("#fileImg").click()};
-  $("#fileImg").onchange=function(){if(this.files&&this.files[0])setImageFile(this.files[0]);this.value=""};
-  $("#btnClearImg").onclick=clearImage;
-
-  // —— Voice chat (mic → STT → send → TTS → listen again) ——
-  var voiceChatOn = false;
-  var recognition = null;
-  var ignoringListen = false; // don't capture while Nova is speaking
-
-  function getRecLang(){
-    var o = store.get("aiOpts", aiOpts) || aiOpts || {};
-    return o.voiceLang || "es-ES";
+  function renderChat() {
+    var c = current(); var root = el("chatInner"); if (!root) return; root.innerHTML = "";
+    if (!c || !c.messages.length) {
+      root.innerHTML = "<div class=\"welcome\"><div class=\"orb\"></div><h1>Que quieres explorar hoy?</h1><p>Nova " + VERSION + " — chat estable.</p><div class=\"suggestions\"><button type=\"button\" data-prompt=\"Hola Nova\">Hola</button><button type=\"button\" data-prompt=\"Que puedes hacer?\">Capacidades</button><button type=\"button\" data-prompt=\"Explica algo de programacion\">Codigo</button><button type=\"button\" data-prompt=\"Recuerda que prefiero respuestas claras\">Memoria</button></div></div>";
+      root.querySelectorAll("[data-prompt]").forEach(function (b) { b.onclick = function () { send(b.getAttribute("data-prompt")); }; });
+    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false); }); }
+    var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight; renderHistory();
   }
-
-  function setListeningUI(on){
-    var btn = $("#btnMic");
-    var ban = $("#voiceBanner");
-    if(btn){
-      btn.classList.toggle("on", !!on || voiceChatOn);
-      btn.classList.toggle("listening", !!on);
-      btn.title = voiceChatOn ? (on ? "Escuchando… (click para parar)" : "Voz chat ON — click para apagar") : "Voz chat";
-    }
-    if(ban){
-      ban.classList.toggle("on", voiceChatOn);
-      ban.textContent = on
-        ? "🎤 Escuchando… habla y haz una pausa"
-        : (voiceChatOn ? "🎤 Voz chat activo — toca 🎤 para detener" : "");
-    }
+  var sending = false;
+  async function send(forcedText) {
+    if (sending) return;
+    var promptEl = el("prompt");
+    var text = (forcedText != null ? forcedText : (promptEl ? promptEl.value : "")).trim();
+    if (!text) return;
+    if (!current()) newChat();
+    var c = current(); if (!c) return;
+    sending = true; var sendBtn = el("send"); if (sendBtn) sendBtn.disabled = true;
+    c.messages.push({ role: "user", text: text });
+    if (c.messages.filter(function (m) { return m.role === "user"; }).length === 1) c.title = text.slice(0, 34) + (text.length > 34 ? "..." : "");
+    c.updated = Date.now(); appendMessage("user", text, true);
+    if (promptEl) { promptEl.value = ""; promptEl.style.height = "auto"; }
+    var rm = text.match(/recuerda que (.+)/i);
+    if (rm) { var note = rm[1].trim().slice(0, 240); if (note && longTerm.indexOf(note) < 0) { longTerm.push(note); store.set("longTerm", longTerm); toast("Guardado en memoria"); } }
+    document.querySelectorAll(".nova-wait").forEach(function (n) { n.remove(); });
+    var wait = document.createElement("div"); wait.className = "message assistant nova-wait";
+    wait.innerHTML = "<div class=\"avatar\">N</div><div class=\"bubble typing\">pensando...</div>";
+    var root = el("chatInner"); if (root) root.appendChild(wait);
+    var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight;
+    var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+    try {
+      var payload = { messages: c.messages.slice(-16).map(function (m) { return { role: m.role, content: m.text }; }), memories: [], longTerm: longTerm.slice(-40), personality: mode, values: settings.values, goals: settings.selfNote, useSearch: true, useGoogleSearch: true };
+      var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 90000) : null;
+      var res = await fetch(url + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined });
+      if (timer) clearTimeout(timer);
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var answer = String(data.reply || "Sin respuesta");
+      c.messages.push({ role: "assistant", text: answer }); saveChats();
+      if (wait.parentNode) wait.remove(); appendMessage("assistant", answer, true);
+      if (autoSpeak) speakText(answer);
+    } catch (err) {
+      if (wait.parentNode) wait.remove();
+      var msg = (err && err.name === "AbortError") ? "Tiempo agotado. Reintenta en 20s." : ("No pude conectar (" + url + "): " + (err && err.message ? err.message : err));
+      c.messages.push({ role: "assistant", text: msg }); saveChats(); appendMessage("assistant", msg, true); toast(String(msg).slice(0, 60));
+    } finally { sending = false; if (sendBtn) sendBtn.disabled = false; renderHistory(); }
   }
-
-  function stopRecognition(){
-    try{ if(recognition) recognition.stop(); }catch(e){}
+  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") renderLt(); if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; } }
+  function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
+  function renderLt() { var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
+  function dictationOnce() { var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast("Dictado no disponible"); return; } var rec = new SR(); rec.lang = "es-ES"; rec.interimResults = false; var btn = el("btnMic"); if (btn) btn.classList.add("on"); rec.onresult = function (ev) { var p = el("prompt"); if (p) p.value = ev.results[0][0].transcript; toast("Listo — toca enviar"); }; rec.onerror = function () { toast("Mic error"); }; rec.onend = function () { if (btn) btn.classList.remove("on"); }; try { rec.start(); } catch (e) { toast("No se pudo usar el mic"); if (btn) btn.classList.remove("on"); } }
+  function bind() {
+    var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
+    var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
+    var prompt = el("prompt"); if (prompt) { prompt.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }); prompt.addEventListener("input", function () { prompt.style.height = "auto"; prompt.style.height = Math.min(prompt.scrollHeight, 140) + "px"; }); }
+    var ms = el("modeSelect"); if (ms) { ms.value = mode; ms.onchange = function () { mode = ms.value; store.set("mode", mode); toast("Modo: " + mode); }; }
+    function click(id, fn) { var n = el(id); if (n) n.onclick = fn; }
+    click("newChat", newChat);
+    click("memoryBtn", function () { openModal("memoryModal"); });
+    click("settingsBtn", function () { openModal("settingsModal"); });
+    click("mobileSettings", function () { openModal("settingsModal"); });
+    click("btnMic", dictationOnce);
+    click("ltAdd", function () { var v = (el("ltInput").value || "").trim(); if (!v) return; if (longTerm.indexOf(v) < 0) longTerm.push(v); store.set("longTerm", longTerm); el("ltInput").value = ""; renderLt(); toast("Guardado"); });
+    click("ltClear", function () { if (confirm("Borrar memoria?")) { longTerm = []; store.set("longTerm", longTerm); renderLt(); } });
+    click("saveSettings", function () { settings = { values: (el("values").value || "").trim() || "honestidad, curiosidad", selfNote: (el("selfNote").value || "").trim() || "ayudar" }; store.set("settings", settings); var u = (el("apiUrl").value || DEFAULT_API).trim().replace(/\/$/, ""); if (!u) u = DEFAULT_API; apiUrl = u; store.set("apiUrl", u); autoSpeak = !!(el("optSpeak") && el("optSpeak").checked); store.set("autoSpeak", autoSpeak); closeModal("settingsModal"); toast("Guardado"); });
+    document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { closeModal(b.getAttribute("data-close")); }; });
+    document.querySelectorAll(".modal-backdrop").forEach(function (m) { m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("open"); }); });
+    if (!chats.length) newChat(); else { currentId = chats[0].id; renderChat(); }
+    console.log("Nova", VERSION, "ready", apiUrl);
   }
-
-  function startRecognition(){
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ toast("Tu navegador no soporta reconocimiento de voz (usa Chrome / Edge)"); return; }
-    if(ignoringListen) return;
-    try{
-      if(recognition){ try{ recognition.onend = null; recognition.stop(); }catch(e){} }
-      recognition = new SR();
-      recognition.lang = getRecLang();
-      recognition.interimResults = true;
-      recognition.continuous = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = function(){ setListeningUI(true); };
-
-      recognition.onresult = function(ev){
-        var interim = "";
-        var finalText = "";
-        for(var i = ev.resultIndex; i < ev.results.length; i++){
-          var piece = ev.results[i][0].transcript;
-          if(ev.results[i].isFinal) finalText += piece;
-          else interim += piece;
-        }
-        var shown = (finalText || interim).trim();
-        if(shown){
-          $("#prompt").value = shown;
-          $("#send").disabled = !shown;
-          var ta = $("#prompt");
-          ta.style.height = "auto";
-          ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
-        }
-        if(finalText.trim() && voiceChatOn){
-          // auto-send when user finishes a phrase
-          var msg = finalText.trim();
-          $("#prompt").value = "";
-          send(msg);
-        }
-      };
-
-      recognition.onerror = function(ev){
-        var err = (ev && ev.error) || "";
-        if(err === "not-allowed" || err === "service-not-allowed"){
-          toast("Permiso de mic denegado — habilitalo en el navegador");
-          voiceChatOn = false;
-          setListeningUI(false);
-          return;
-        }
-        if(err === "no-speech"){ /* restart below via onend */ return; }
-        if(err !== "aborted") toast("Mic: " + err);
-      };
-
-      recognition.onend = function(){
-        setListeningUI(false);
-        if(voiceChatOn && !ignoringListen){
-          // small delay then listen again
-          setTimeout(function(){
-            if(voiceChatOn && !ignoringListen) startRecognition();
-          }, 350);
-        }
-      };
-
-      recognition.start();
-    }catch(e){
-      toast("No se pudo iniciar el mic");
-      voiceChatOn = false;
-      setListeningUI(false);
-    }
-  }
-
-  // Wrap speakText so voice-chat pauses listening while Nova talks
-  var _speakText = speakText;
-  speakText = function(text){
-    ignoringListen = true;
-    stopRecognition();
-    setListeningUI(false);
-    try{
-      if(!window.speechSynthesis){ ignoringListen = false; if(voiceChatOn) startRecognition(); return; }
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
-      var opts = store.get("aiOpts", aiOpts) || aiOpts || {};
-      u.lang = opts.voiceLang || "es-ES";
-      u.rate = Number(opts.voiceRate || 1);
-      u.onend = function(){
-        ignoringListen = false;
-        if(voiceChatOn) setTimeout(startRecognition, 280);
-      };
-      u.onerror = function(){
-        ignoringListen = false;
-        if(voiceChatOn) setTimeout(startRecognition, 280);
-      };
-      window.speechSynthesis.speak(u);
-    }catch(e){
-      ignoringListen = false;
-      if(voiceChatOn) startRecognition();
-    }
-  };
-
-  $("#btnMic").onclick = function(){
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ toast("Reconocimiento de voz no soportado — prueba Chrome o Edge"); return; }
-
-    if(voiceChatOn){
-      // turn off
-      voiceChatOn = false;
-      ignoringListen = false;
-      stopRecognition();
-      try{ window.speechSynthesis && window.speechSynthesis.cancel(); }catch(e){}
-      setListeningUI(false);
-      toast("Voz chat OFF");
-      return;
-    }
-
-    // turn on: enable auto-speak for the conversation
-    voiceChatOn = true;
-    var o = store.get("aiOpts", aiOpts) || aiOpts || {};
-    o.autoSpeak = true;
-    store.set("aiOpts", o);
-    aiOpts = o;
-    toast("Voz chat ON — habla con el mic");
-    startRecognition();
-  };
-
-
-  $("#ltAdd").onclick=function(){var v=$("#ltInput").value.trim();if(!v)return;if(longTerm.indexOf(v)<0)longTerm.push(v);store.set("longTerm",longTerm);$("#ltInput").value="";renderLt();toast("Memoria larga OK")};
-  $("#ltClear").onclick=function(){if(confirm("¿Borrar memoria larga?")){longTerm=[];store.set("longTerm",longTerm);renderLt()}};
-  $("#ltExport").onclick=function(){var blob=new Blob([JSON.stringify({longTerm:longTerm},null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="nova-long-term.json";a.click()};
-  $("#ltImportBtn").onclick=function(){$("#ltImport").click()};
-  $("#ltImport").onchange=function(){var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);var arr=d.longTerm||d;if(!Array.isArray(arr))throw new Error("bad");longTerm=arr.map(String);store.set("longTerm",longTerm);renderLt();toast("Importado")}catch(e){toast("Import falló")}};r.readAsText(f);this.value=""};
-
-  $("#actCopy").onclick=function(){var c=current();if(!c)return;var last=[].concat(c.messages).reverse().find(function(m){return m.role==="assistant"});if(last)navigator.clipboard.writeText(last.text).then(function(){toast("Copiado")})};
-  $("#actDownload").onclick=function(){var c=current();if(!c)return;var txt=c.messages.map(function(m){return (m.role==="user"?"Tú: ":"Nova: ")+m.text}).join("\n\n");var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download=(c.title||"chat")+".txt";a.click()};
-  $("#actMailto").onclick=function(){var c=current();var last=c&&[].concat(c.messages).reverse().find(function(m){return m.role==="assistant"});var body=last?last.text.slice(0,1500):"";window.location.href="mailto:?subject=Nova&body="+encodeURIComponent(body)};
-
-  $("#saveSettings").onclick=function(){
-    settings={values:$("#values").value.trim()||"honestidad, curiosidad",selfNote:$("#selfNote").value.trim()||"ayudar"};
-    store.set("settings",settings);
-    var u=($("#apiUrl").value||DEFAULT_API).trim().replace(/\/$/,""); if(!u)u=DEFAULT_API; store.set("apiUrl",u); apiUrl=u;
-    mode=$("#optMode").value||"equilibrado"; store.set("mode",mode);
-    aiOpts={
-      autoSearch:$("#optSearch").checked,
-      useGoogleSearch:$("#optGoogle").checked,
-      autoSpeak:$("#optSpeak").checked,
-      voiceLang:$("#optVoiceLang").value||"es-ES",
-      voiceRate:Number($("#optVoiceRate").value)||1,
-      imageProvider:$("#optImage").value||"pollinations"
-    };
-    store.set("aiOpts",aiOpts);
-    closeModal("settingsModal"); toast("Guardado");
-  };;
-  document.querySelectorAll("[data-close]").forEach(function(b){b.onclick=function(){closeModal(b.getAttribute("data-close"))}});
-  document.querySelectorAll(".modal-backdrop").forEach(function(m){m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("open")})});
-
-  // secret: triple-click logo
-  $("#logoTap").onclick=function(){
-    logoTaps++;
-    clearTimeout($("#logoTap")._t);
-    $("#logoTap")._t=setTimeout(function(){logoTaps=0},900);
-    if(logoTaps>=3){
-      logoTaps=0; secretHappy=true;
-      var flash=$("#secretFlash"); flash.classList.add("show");
-      setTimeout(function(){flash.classList.remove("show")},800);
-      toast("…me alegra que estés acá");
-      if(longTerm.indexOf("(secreto) le importa que vuelva")<0){
-        longTerm.push("(secreto) le importa que vuelva");
-        store.set("longTerm",longTerm);
-      }
-    }
-  };
-
-  if(!chats.length)newChat(); else{currentId=chats[0].id;renderChat()}
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind); else bind();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind); else bind();
 })();
 </script>
 </body>
