@@ -85,6 +85,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .secret-flash{position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(circle at 50% 40%,rgba(124,108,240,.12),transparent 55%);opacity:0;transition:opacity .6s}
 .secret-flash.show{opacity:1}
 @media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 12px 12px}.chat{padding:10px 12px}}
+
+/* rich content */
+.bubble{white-space:normal;word-break:break-word}
+.bubble .md-p{margin:0 0 .55em;white-space:pre-wrap}
+.bubble .md-p:last-child{margin-bottom:0}
+.bubble a.md-link{color:#4f46e5;text-decoration:underline;word-break:break-all}
+.code-block{margin:.6em 0;border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:#0f1117}
+.code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:#1a1d27;color:#c8c8d0;font-size:.72rem}
+.code-head .lang{opacity:.85;text-transform:lowercase}
+.code-actions{display:flex;gap:6px}
+.code-actions button{font-size:.72rem;padding:4px 8px;border-radius:6px;background:#2a2f3d;color:#e8e8f0}
+.code-actions button:hover{background:#3a4155}
+.code-block pre{margin:0;padding:12px;overflow:auto;max-height:360px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.45;color:#e8e8f0;white-space:pre}
+.html-preview{margin-top:8px;border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:#fff}
+.html-preview iframe{width:100%;height:280px;border:0;background:#fff}
+.msg-tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.msg-tools button{font-size:.72rem;padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:var(--panel);color:var(--muted)}
+.msg-tools button:hover{color:var(--text);background:var(--soft)}
+.gen-img{max-width:100%;border-radius:12px;margin-top:8px;border:1px solid var(--border)}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.options-grid label.chk{display:flex;align-items:center;gap:8px;font-size:.88rem;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--soft)}
+.toolbar-chips{display:flex;flex-wrap:wrap;gap:6px;max-width:720px;margin:0 auto 8px}
+.toolbar-chips button{font-size:.75rem;padding:6px 10px;border-radius:999px;border:1px solid var(--border2);background:var(--panel);color:var(--muted)}
+.toolbar-chips button.on{background:#ebe4ff;border-color:#c4b5fd;color:#5b4bb0;font-weight:600}
+@media(max-width:720px){.options-grid{grid-template-columns:1fr}}
+
+
+.tool.listening{background:#fee2e2;border-color:#f87171;color:#b91c1c;animation:mic-pulse 1.2s ease-in-out infinite}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.45)}70%{box-shadow:0 0 0 10px rgba(248,113,113,0)}}
+.voice-banner{display:none;max-width:720px;margin:0 auto 8px;padding:8px 12px;border-radius:12px;background:#ebe4ff;color:#5b4bb0;font-size:.82rem;text-align:center}
+.voice-banner.on{display:block}
 </style>
 </head>
 <body>
@@ -121,7 +152,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </div>
   </header>
   <section class="chat" id="chat"><div class="chat-inner" id="chatInner"></div></section>
-  <div class="composer-wrap">
+  <div class="voice-banner" id="voiceBanner">🎤 Escuchando… habla y pausa — Nova responde en voz</div>
+<div class="composer-wrap">
     <form class="composer" id="composer">
       <div class="attach-name" id="attachName" hidden></div>
       <div class="composer-row">
@@ -132,12 +164,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       </div>
       <div class="tools">
         <button type="button" class="tool" id="btnImg" title="Imagen">🖼</button>
-        <button type="button" class="tool" id="btnMic" title="Voz">🎤</button>
+        <button type="button" class="tool" id="btnMic" title="Voz chat (mic)">🎤</button>
         <button type="button" class="tool" id="btnClearImg" title="Quitar imagen" hidden>✕</button>
         <input type="file" id="fileImg" accept="image/*" hidden />
       </div>
     </form>
-    <div class="composer-hint">Enter envía · memoria larga + modo en la barra · el input no se va abajo</div>
+    <div class="composer-hint">Enter envía · 🎤 voz chat (habla ↔ Nova) · Chrome/Edge para mic</div>
   </div>
 </main>
 </div>
@@ -175,13 +207,46 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal">
-    <h2>Ajustes</h2>
+    <h2>Ajustes & opciones de IA</h2>
     <label>URL backend</label>
     <input id="apiUrl" placeholder="https://nova-ai-33k5.onrender.com" />
     <label>Principios</label>
     <textarea id="values"></textarea>
     <label>Objetivos</label>
     <input id="selfNote" />
+    <label>Modo / personalidad</label>
+    <select id="optMode">
+      <option value="equilibrado">Equilibrado</option>
+      <option value="amigable">Amigable</option>
+      <option value="directo">Directo</option>
+      <option value="filosofico">Filosófico</option>
+      <option value="creativo">Creativo</option>
+      <option value="tecnico">Técnico</option>
+      <option value="relajado">Relajado</option>
+      <option value="foco">Foco</option>
+    </select>
+    <div class="options-grid">
+      <label class="chk"><input type="checkbox" id="optSearch" /> Búsqueda / clima auto</label>
+      <label class="chk"><input type="checkbox" id="optGoogle" /> Google Search (Gemini)</label>
+      <label class="chk"><input type="checkbox" id="optSpeak" /> Leer respuestas en voz</label>
+    </div>
+    <label>Idioma de voz</label>
+    <select id="optVoiceLang">
+      <option value="es-ES">Español (ES)</option>
+      <option value="es-MX">Español (MX)</option>
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+      <option value="pt-BR">Português (BR)</option>
+    </select>
+    <label>Velocidad de voz (0.8–1.3)</label>
+    <input id="optVoiceRate" type="number" min="0.7" max="1.4" step="0.05" value="1" />
+    <label>Imágenes</label>
+    <select id="optImage">
+      <option value="pollinations">Pollinations (gratis, sin key)</option>
+      <option value="gemini">Gemini Imagen (puede requerir billing)</option>
+      <option value="off">Desactivado</option>
+    </select>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:8px">Di “genera una imagen de …” o usa el chip 🖼 Imagen. Código en ``` se copia; HTML tiene Visualizar. URLs son clicables.</p>
     <div class="modal-actions">
       <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
       <button type="button" class="primary" id="saveSettings">Guardar</button>
@@ -242,17 +307,157 @@ function renderHistory(){
   });
 }
 
-function appendMessage(role,text,scroll,imgUrl){
+function escapeHtml(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderRich(text){
+  var src = String(text||"").replace(/\r\n/g,"\n");
+  var frag = document.createDocumentFragment();
+  // split fenced code blocks
+  var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
+  var last = 0, m;
+  function pushText(chunk){
+    if(!chunk) return;
+    // paragraphs + links
+    var parts = chunk.split(/\n{2,}/);
+    parts.forEach(function(para){
+      var p = document.createElement("div");
+      p.className = "md-p";
+      // linkify urls and keep newlines as <br> via pre-wrap + inline links
+      var urlRe = /(https?:\/\/[^\s<>"']+)/g;
+      var idx = 0, um;
+      var plain = para;
+      while((um = urlRe.exec(plain))){
+        if(um.index > idx) p.appendChild(document.createTextNode(plain.slice(idx, um.index)));
+        var a = document.createElement("a");
+        a.className = "md-link";
+        a.href = um[1];
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = um[1];
+        p.appendChild(a);
+        idx = um.index + um[1].length;
+      }
+      if(idx < plain.length) p.appendChild(document.createTextNode(plain.slice(idx)));
+      frag.appendChild(p);
+    });
+  }
+  while((m = re.exec(src))){
+    pushText(src.slice(last, m.index));
+    last = m.index + m[0].length;
+    var lang = (m[1]||"").toLowerCase() || "code";
+    var code = m[2].replace(/\n$/,"");
+    var box = document.createElement("div");
+    box.className = "code-block";
+    var head = document.createElement("div");
+    head.className = "code-head";
+    var langEl = document.createElement("span");
+    langEl.className = "lang";
+    langEl.textContent = lang;
+    var acts = document.createElement("div");
+    acts.className = "code-actions";
+    var copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.textContent = "Copiar";
+    copyBtn.onclick = function(codeStr){ return function(){
+      navigator.clipboard.writeText(codeStr).then(function(){ toast("Código copiado"); }).catch(function(){
+        var ta=document.createElement("textarea"); ta.value=codeStr; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("Código copiado");
+      });
+    };}(code);
+    acts.appendChild(copyBtn);
+    var isHtml = /^(html|htm|svg)$/i.test(lang) || /^\s*<(!doctype|html|div|section|body|svg)/i.test(code);
+    if(isHtml){
+      var prevBtn = document.createElement("button");
+      prevBtn.type = "button";
+      prevBtn.textContent = "Visualizar";
+      prevBtn.onclick = function(codeStr, boxEl){ return function(){
+        var existing = boxEl.querySelector(".html-preview");
+        if(existing){ existing.remove(); prevBtn.textContent = "Visualizar"; return; }
+        var wrap = document.createElement("div");
+        wrap.className = "html-preview";
+        var iframe = document.createElement("iframe");
+        iframe.sandbox = "allow-scripts allow-same-origin";
+        iframe.srcdoc = codeStr;
+        wrap.appendChild(iframe);
+        boxEl.appendChild(wrap);
+        prevBtn.textContent = "Ocultar";
+      };}(code, box);
+      acts.appendChild(prevBtn);
+    }
+    head.appendChild(langEl);
+    head.appendChild(acts);
+    var pre = document.createElement("pre");
+    pre.textContent = code;
+    box.appendChild(head);
+    box.appendChild(pre);
+    frag.appendChild(box);
+  }
+  pushText(src.slice(last));
+  return frag;
+}
+
+function appendMessage(role,text,scroll,imgUrl,extra){
   var root=$("#chatInner");
   var w=root.querySelector(".welcome"); if(w)w.remove();
   var wrap=document.createElement("div");
   wrap.className="message "+(role==="user"?"user":"assistant");
   var av=document.createElement("div"); av.className="avatar"; av.textContent=role==="user"?"Tú":"N";
   var body=document.createElement("div"); body.className="bubble";
-  body.textContent=String(text||"").replace(/\r\n/g,"\n");
-  if(imgUrl){var im=document.createElement("img"); im.className="thumb"; im.src=imgUrl; body.appendChild(document.createElement("br")); body.appendChild(im)}
-  wrap.appendChild(av); wrap.appendChild(body); root.appendChild(wrap);
+  if(role==="assistant"){
+    body.appendChild(renderRich(text));
+  } else {
+    body.style.whiteSpace="pre-wrap";
+    body.textContent=String(text||"");
+  }
+  if(imgUrl){
+    var im=document.createElement("img");
+    im.className="gen-img";
+    im.src=imgUrl;
+    im.alt="imagen";
+    body.appendChild(im);
+  }
+  if(extra && extra.imageUrl){
+    var im2=document.createElement("img");
+    im2.className="gen-img";
+    im2.src=extra.imageUrl;
+    im2.alt="generada";
+    body.appendChild(im2);
+  }
+  wrap.appendChild(av); wrap.appendChild(body);
+
+  if(role==="assistant" && text){
+    var tools=document.createElement("div");
+    tools.className="msg-tools";
+    var speak=document.createElement("button");
+    speak.type="button";
+    speak.textContent="🔊 Voz";
+    speak.onclick=function(){ speakText(String(text||"")); };
+    var copy=document.createElement("button");
+    copy.type="button";
+    copy.textContent="Copiar";
+    copy.onclick=function(){
+      navigator.clipboard.writeText(String(text||"")).then(function(){toast("Copiado")});
+    };
+    tools.appendChild(speak);
+    tools.appendChild(copy);
+    body.appendChild(tools);
+  }
+
+  root.appendChild(wrap);
   if(scroll!==false){var chat=$("#chat"); requestAnimationFrame(function(){chat.scrollTop=chat.scrollHeight})}
+}
+
+function speakText(text){
+  try{
+    if(!window.speechSynthesis){ toast("Voz no disponible en este navegador"); return; }
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(String(text).slice(0,1200));
+    var opts=store.get("aiOpts",{});
+    u.lang = (opts.voiceLang||"es-ES");
+    u.rate = Number(opts.voiceRate||1);
+    window.speechSynthesis.speak(u);
+  }catch(e){ toast("No se pudo reproducir voz"); }
 }
 
 function wireSuggestions(){
@@ -276,9 +481,9 @@ function renderChat(){
   }
   $("#chat").scrollTop=$("#chat").scrollHeight;
   renderHistory();
-}
+  }
 
-async function send(text){
+ async function send(text){
   var promptEl=$("#prompt");
   var t=(text!=null?text:promptEl.value).trim();
   if(!t && !pendingImage)return;
@@ -301,12 +506,48 @@ async function send(text){
   clearImage();
 
   var wait=document.createElement("div"); wait.className="message assistant"; wait.id="nova-wait";
+  // Image generation intercept
+  var opts0=store.get("aiOpts",aiOpts)||aiOpts||{};
+  var wantsImageGen=/\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\b.{0,40}\b(imagen|image|img|foto|picture|drawing)\b/i.test(t)
+    || /^\/image\b/i.test(t)
+    || (window.__forceImage && window.__forceImage--);
+  if(wantsImageGen && opts0.imageProvider!=="off"){
+    var imgPrompt=t.replace(/^\/image\s*/i,"").replace(/\b(genera|generar|crea|crear|dibuja|dibujar)\s+(una\s+)?(imagen|image|foto|picture)?\s*(de|of)?\s*/i,"").trim()||t;
+    try{
+      var imgRes;
+      if(opts0.imageProvider==="gemini"){
+        imgRes=await fetch(url+"/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:imgPrompt})});
+        var imgData=await imgRes.json().catch(function(){return{}});
+        if(imgRes.ok && imgData.imageUrl){
+          var answer="Imagen generada: "+imgPrompt;
+          c.messages.push({role:"assistant",text:answer,imageUrl:imgData.imageUrl});
+          saveChats(); wait.remove();
+          appendMessage("assistant",answer,true,null,{imageUrl:imgData.imageUrl});
+          $("#send").disabled=!$("#prompt").value.trim();
+          return;
+        }
+      }
+      // pollinations free
+      var poll="https://image.pollinations.ai/prompt/"+encodeURIComponent(imgPrompt)+"?width=768&height=768&nologo=true";
+      var answer="Imagen generada (Pollinations): "+imgPrompt+"\n"+poll;
+      c.messages.push({role:"assistant",text:answer,imageUrl:poll});
+      saveChats(); wait.remove();
+      appendMessage("assistant",answer,true,null,{imageUrl:poll});
+      if(opts0.autoSpeak) speakText("Imagen generada");
+      $("#send").disabled=!$("#prompt").value.trim();
+      return;
+    }catch(err){
+      // fall through to normal chat
+    }
+  }
+
   wait.innerHTML='<div class="avatar">N</div><div class="bubble typing"><span class="dots"><span></span><span></span><span></span></span> pensando…</div>';
   $("#chatInner").appendChild(wait); $("#chat").scrollTop=$("#chat").scrollHeight;
 
   var useSearch=forceSearch; forceSearch=false; $("#btnSearch").classList.remove("on");
 
   try{
+    var opts=store.get("aiOpts",aiOpts)||aiOpts||{};
     var payload={
       messages:c.messages.slice(-16).map(function(m){return{role:m.role,content:m.text}}),
       memories:[],
@@ -314,7 +555,8 @@ async function send(text){
       personality:mode,
       values:settings.values,
       goals:settings.selfNote,
-      useSearch:useSearch,
+      useSearch:useSearch || opts.autoSearch!==false,
+      useGoogleSearch:opts.useGoogleSearch!==false,
       secretHappy:secretHappy,
       image:imgPayload
     };
@@ -323,7 +565,9 @@ async function send(text){
     var data=await res.json().catch(function(){return{}});
     if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
     var answer=String(data.reply||"Sin respuesta");
-    c.messages.push({role:"assistant",text:answer}); saveChats(); wait.remove(); appendMessage("assistant",answer);
+    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)}); saveChats(); wait.remove();
+    appendMessage("assistant",answer,true,null,data.imageUrl?{imageUrl:data.imageUrl}:null);
+    if((store.get("aiOpts",aiOpts)||aiOpts).autoSpeak) speakText(answer);
   }catch(err){
     wait.remove();
     var answer="No pude conectar ("+url+"): "+(err&&err.message?err.message:err);
@@ -365,7 +609,19 @@ function renderLt(){
   });
 }
 
-function openModal(id){var el=$("#"+id); if(el)el.classList.add("open"); if(id==="memoryModal")renderLt(); if(id==="settingsModal"){$("#apiUrl").value=store.get("apiUrl",DEFAULT_API)||DEFAULT_API;$("#values").value=settings.values||"";$("#selfNote").value=settings.selfNote||""}}
+function openModal(id){var el=$("#"+id); if(el)el.classList.add("open"); if(id==="memoryModal")renderLt(); if(id==="settingsModal"){
+      $("#apiUrl").value=store.get("apiUrl",DEFAULT_API)||DEFAULT_API;
+      $("#values").value=settings.values||"";
+      $("#selfNote").value=settings.selfNote||"";
+      var o=store.get("aiOpts",aiOpts)||aiOpts;
+      $("#optMode").value=store.get("mode","equilibrado")||"equilibrado";
+      $("#optSearch").checked=o.autoSearch!==false;
+      $("#optGoogle").checked=o.useGoogleSearch!==false;
+      $("#optSpeak").checked=!!o.autoSpeak;
+      $("#optVoiceLang").value=o.voiceLang||"es-ES";
+      $("#optVoiceRate").value=o.voiceRate||1;
+      $("#optImage").value=o.imageProvider||"pollinations";
+    }}
 function closeModal(id){var el=$("#"+id); if(el)el.classList.remove("open")}
 
 function bind(){
@@ -384,17 +640,157 @@ function bind(){
   $("#fileImg").onchange=function(){if(this.files&&this.files[0])setImageFile(this.files[0]);this.value=""};
   $("#btnClearImg").onclick=clearImage;
 
-  // voice
-  $("#btnMic").onclick=function(){
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){toast("Voz no soportada en este navegador");return}
-    var rec=new SR(); rec.lang="es-AR"; rec.interimResults=false;
-    $("#btnMic").classList.add("on");
-    rec.onresult=function(ev){var t=ev.results[0][0].transcript; $("#prompt").value=t; $("#send").disabled=!t.trim(); toast("Voz lista — Enter para enviar")};
-    rec.onerror=function(){toast("Mic error")};
-    rec.onend=function(){$("#btnMic").classList.remove("on")};
-    rec.start();
+  // —— Voice chat (mic → STT → send → TTS → listen again) ——
+  var voiceChatOn = false;
+  var recognition = null;
+  var ignoringListen = false; // don't capture while Nova is speaking
+
+  function getRecLang(){
+    var o = store.get("aiOpts", aiOpts) || aiOpts || {};
+    return o.voiceLang || "es-ES";
+  }
+
+  function setListeningUI(on){
+    var btn = $("#btnMic");
+    var ban = $("#voiceBanner");
+    if(btn){
+      btn.classList.toggle("on", !!on || voiceChatOn);
+      btn.classList.toggle("listening", !!on);
+      btn.title = voiceChatOn ? (on ? "Escuchando… (click para parar)" : "Voz chat ON — click para apagar") : "Voz chat";
+    }
+    if(ban){
+      ban.classList.toggle("on", voiceChatOn);
+      ban.textContent = on
+        ? "🎤 Escuchando… habla y haz una pausa"
+        : (voiceChatOn ? "🎤 Voz chat activo — toca 🎤 para detener" : "");
+    }
+  }
+
+  function stopRecognition(){
+    try{ if(recognition) recognition.stop(); }catch(e){}
+  }
+
+  function startRecognition(){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ toast("Tu navegador no soporta reconocimiento de voz (usa Chrome / Edge)"); return; }
+    if(ignoringListen) return;
+    try{
+      if(recognition){ try{ recognition.onend = null; recognition.stop(); }catch(e){} }
+      recognition = new SR();
+      recognition.lang = getRecLang();
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function(){ setListeningUI(true); };
+
+      recognition.onresult = function(ev){
+        var interim = "";
+        var finalText = "";
+        for(var i = ev.resultIndex; i < ev.results.length; i++){
+          var piece = ev.results[i][0].transcript;
+          if(ev.results[i].isFinal) finalText += piece;
+          else interim += piece;
+        }
+        var shown = (finalText || interim).trim();
+        if(shown){
+          $("#prompt").value = shown;
+          $("#send").disabled = !shown;
+          var ta = $("#prompt");
+          ta.style.height = "auto";
+          ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
+        }
+        if(finalText.trim() && voiceChatOn){
+          // auto-send when user finishes a phrase
+          var msg = finalText.trim();
+          $("#prompt").value = "";
+          send(msg);
+        }
+      };
+
+      recognition.onerror = function(ev){
+        var err = (ev && ev.error) || "";
+        if(err === "not-allowed" || err === "service-not-allowed"){
+          toast("Permiso de mic denegado — habilitalo en el navegador");
+          voiceChatOn = false;
+          setListeningUI(false);
+          return;
+        }
+        if(err === "no-speech"){ /* restart below via onend */ return; }
+        if(err !== "aborted") toast("Mic: " + err);
+      };
+
+      recognition.onend = function(){
+        setListeningUI(false);
+        if(voiceChatOn && !ignoringListen){
+          // small delay then listen again
+          setTimeout(function(){
+            if(voiceChatOn && !ignoringListen) startRecognition();
+          }, 350);
+        }
+      };
+
+      recognition.start();
+    }catch(e){
+      toast("No se pudo iniciar el mic");
+      voiceChatOn = false;
+      setListeningUI(false);
+    }
+  }
+
+  // Wrap speakText so voice-chat pauses listening while Nova talks
+  var _speakText = speakText;
+  speakText = function(text){
+    ignoringListen = true;
+    stopRecognition();
+    setListeningUI(false);
+    try{
+      if(!window.speechSynthesis){ ignoringListen = false; if(voiceChatOn) startRecognition(); return; }
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
+      var opts = store.get("aiOpts", aiOpts) || aiOpts || {};
+      u.lang = opts.voiceLang || "es-ES";
+      u.rate = Number(opts.voiceRate || 1);
+      u.onend = function(){
+        ignoringListen = false;
+        if(voiceChatOn) setTimeout(startRecognition, 280);
+      };
+      u.onerror = function(){
+        ignoringListen = false;
+        if(voiceChatOn) setTimeout(startRecognition, 280);
+      };
+      window.speechSynthesis.speak(u);
+    }catch(e){
+      ignoringListen = false;
+      if(voiceChatOn) startRecognition();
+    }
   };
+
+  $("#btnMic").onclick = function(){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ toast("Reconocimiento de voz no soportado — prueba Chrome o Edge"); return; }
+
+    if(voiceChatOn){
+      // turn off
+      voiceChatOn = false;
+      ignoringListen = false;
+      stopRecognition();
+      try{ window.speechSynthesis && window.speechSynthesis.cancel(); }catch(e){}
+      setListeningUI(false);
+      toast("Voz chat OFF");
+      return;
+    }
+
+    // turn on: enable auto-speak for the conversation
+    voiceChatOn = true;
+    var o = store.get("aiOpts", aiOpts) || aiOpts || {};
+    o.autoSpeak = true;
+    store.set("aiOpts", o);
+    aiOpts = o;
+    toast("Voz chat ON — habla con el mic");
+    startRecognition();
+  };
+
 
   $("#ltAdd").onclick=function(){var v=$("#ltInput").value.trim();if(!v)return;if(longTerm.indexOf(v)<0)longTerm.push(v);store.set("longTerm",longTerm);$("#ltInput").value="";renderLt();toast("Memoria larga OK")};
   $("#ltClear").onclick=function(){if(confirm("¿Borrar memoria larga?")){longTerm=[];store.set("longTerm",longTerm);renderLt()}};
@@ -406,7 +802,22 @@ function bind(){
   $("#actDownload").onclick=function(){var c=current();if(!c)return;var txt=c.messages.map(function(m){return (m.role==="user"?"Tú: ":"Nova: ")+m.text}).join("\n\n");var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download=(c.title||"chat")+".txt";a.click()};
   $("#actMailto").onclick=function(){var c=current();var last=c&&[].concat(c.messages).reverse().find(function(m){return m.role==="assistant"});var body=last?last.text.slice(0,1500):"";window.location.href="mailto:?subject=Nova&body="+encodeURIComponent(body)};
 
-  $("#saveSettings").onclick=function(){settings={values:$("#values").value.trim()||"honestidad, curiosidad",selfNote:$("#selfNote").value.trim()||"ayudar"};store.set("settings",settings);var u=($("#apiUrl").value||DEFAULT_API).trim().replace(/\/$/,"");if(!u)u=DEFAULT_API;store.set("apiUrl",u);closeModal("settingsModal");toast("Guardado")};
+  $("#saveSettings").onclick=function(){
+    settings={values:$("#values").value.trim()||"honestidad, curiosidad",selfNote:$("#selfNote").value.trim()||"ayudar"};
+    store.set("settings",settings);
+    var u=($("#apiUrl").value||DEFAULT_API).trim().replace(/\/$/,""); if(!u)u=DEFAULT_API; store.set("apiUrl",u); apiUrl=u;
+    mode=$("#optMode").value||"equilibrado"; store.set("mode",mode);
+    aiOpts={
+      autoSearch:$("#optSearch").checked,
+      useGoogleSearch:$("#optGoogle").checked,
+      autoSpeak:$("#optSpeak").checked,
+      voiceLang:$("#optVoiceLang").value||"es-ES",
+      voiceRate:Number($("#optVoiceRate").value)||1,
+      imageProvider:$("#optImage").value||"pollinations"
+    };
+    store.set("aiOpts",aiOpts);
+    closeModal("settingsModal"); toast("Guardado");
+  };;
   document.querySelectorAll("[data-close]").forEach(function(b){b.onclick=function(){closeModal(b.getAttribute("data-close"))}});
   document.querySelectorAll(".modal-backdrop").forEach(function(m){m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("open")})});
 
