@@ -62,7 +62,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tool.on{background:#ebe4ff;border-color:#c4b5fd}
 .send{width:44px;height:44px;min-width:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0;font-size:1.1rem}
 .send:disabled{opacity:.35}
-.composer-hint{max-width:720px;margin:8px auto 0;text-align:center;font-size:.72rem;color:var(--muted)}
+.gen-img,.msg-thumb{max-width:min(100%,320px);border-radius:12px;margin-top:8px;border:1px solid var(--border);display:block}.attach-bar{display:none;align-items:center;gap:8px;padding:4px 2px;font-size:.78rem;color:var(--muted)}.attach-bar.on{display:flex}.attach-bar img{width:40px;height:40px;object-fit:cover;border-radius:8px}.composer-hint{max-width:720px;margin:8px auto 0;text-align:center;font-size:.72rem;color:var(--muted)}
 .modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal-backdrop.open{display:flex}
 .modal{background:var(--panel);border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:90dvh;overflow:auto;box-shadow:var(--shadow)}
@@ -80,14 +80,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v23</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v24</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
   <div class="side-bottom">
     <button type="button" class="sidebtn" id="memoryBtn">Memoria</button>
     <button type="button" class="sidebtn" id="settingsBtn">Ajustes</button>
-    <div class="privacy">Gemini · v23 estable</div>
+    <div class="privacy">Gemini · v24 media</div>
   </div>
 </aside>
 <main class="main">
@@ -108,13 +108,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <section class="chat" id="chat"><div class="chat-inner" id="chatInner"></div></section>
   <div class="composer-wrap">
     <form class="composer" id="composer">
+      <div class="attach-bar" id="attachBar"><img id="attachPrev" alt=""/><span id="attachName">imagen</span><button type="button" class="secondary" id="btnClearImg" style="padding:4px 8px;font-size:.75rem">Quitar</button></div>
       <div class="composer-row">
         <textarea id="prompt" rows="1" placeholder="Escribe a Nova…"></textarea>
+        <input type="file" id="fileImg" accept="image/*" hidden />
+        <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
+        <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
         <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
         <button type="button" class="send" id="send">↑</button>
       </div>
     </form>
-    <div class="composer-hint">Enter envia · mic dicta · v23</div>
+    <div class="composer-hint">v24 · 🖼 subir · ✨ generar · 🎤 dictar · Enter envía</div>
   </div>
 </main>
 </div>
@@ -144,7 +148,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v23";
+  var VERSION = "v24";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -158,6 +162,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   var settings = store.get("settings", { values: "honestidad, curiosidad, respeto", selfNote: "ayudar y explorar" });
   var mode = store.get("mode", "equilibrado") || "equilibrado";
   var autoSpeak = !!store.get("autoSpeak", false);
+  var pendingImage = null; // {mimeType,data,preview,name}
   var apiUrl = store.get("apiUrl", "");
   if (typeof apiUrl !== "string" || !apiUrl || /tu-servicio/i.test(apiUrl)) apiUrl = DEFAULT_API;
   apiUrl = String(apiUrl).replace(/\/$/, ""); store.set("apiUrl", apiUrl);
@@ -202,13 +207,24 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     addText(src.slice(last));
   }
   function speakText(text) { try { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(text).slice(0, 900)); u.lang = "es-ES"; window.speechSynthesis.speak(u); } catch (e) {} }
-  function appendMessage(role, text, scroll) {
+  function appendMessage(role, text, scroll, imgUrl) {
     var root = el("chatInner"); if (!root) return;
     var w = root.querySelector(".welcome"); if (w) w.remove();
     var wrap = document.createElement("div"); wrap.className = "message " + (role === "user" ? "user" : "assistant");
     var av = document.createElement("div"); av.className = "avatar"; av.textContent = role === "user" ? "Tu" : "N";
     var body = document.createElement("div"); body.className = "bubble";
-    if (role === "assistant") { fillRich(body, text); var tools = document.createElement("div"); tools.className = "msg-tools"; var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); }; var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar"; b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); }; tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools); } else { body.textContent = String(text || ""); }
+    if (role === "assistant") {
+      fillRich(body, text);
+      if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
+      var tools = document.createElement("div"); tools.className = "msg-tools";
+      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
+      var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
+      b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); };
+      tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools);
+    } else {
+      body.textContent = String(text || "");
+      if (imgUrl) { var im2 = document.createElement("img"); im2.className = "msg-thumb"; im2.src = imgUrl; im2.alt = "subida"; body.appendChild(im2); }
+    }
     wrap.appendChild(av); wrap.appendChild(body); root.appendChild(wrap);
     if (scroll !== false) { var chat = el("chat"); if (chat) requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; }); }
   }
@@ -217,48 +233,143 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!c || !c.messages.length) {
       root.innerHTML = "<div class=\"welcome\"><div class=\"orb\"></div><h1>Que quieres explorar hoy?</h1><p>Nova " + VERSION + " — chat estable.</p><div class=\"suggestions\"><button type=\"button\" data-prompt=\"Hola Nova\">Hola</button><button type=\"button\" data-prompt=\"Que puedes hacer?\">Capacidades</button><button type=\"button\" data-prompt=\"Explica algo de programacion\">Codigo</button><button type=\"button\" data-prompt=\"Recuerda que prefiero respuestas claras\">Memoria</button></div></div>";
       root.querySelectorAll("[data-prompt]").forEach(function (b) { b.onclick = function () { send(b.getAttribute("data-prompt")); }; });
-    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false); }); }
+    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview); }); }
     var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight; renderHistory();
   }
   var sending = false;
+  function clearPendingImage() {
+    pendingImage = null;
+    var bar = el("attachBar"); if (bar) bar.classList.remove("on");
+    var prev = el("attachPrev"); if (prev) prev.removeAttribute("src");
+  }
+  function setPendingImage(file) {
+    if (!file || !file.type || file.type.indexOf("image/") !== 0) { toast("Solo imagenes"); return; }
+    if (file.size > 4 * 1024 * 1024) { toast("Max 4MB"); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var dataUrl = String(reader.result || "");
+      var comma = dataUrl.indexOf(",");
+      var meta = dataUrl.slice(0, comma);
+      var b64 = dataUrl.slice(comma + 1);
+      var mime = (meta.match(/data:([^;]+)/) || [])[1] || file.type || "image/jpeg";
+      pendingImage = { mimeType: mime, data: b64, preview: dataUrl, name: file.name || "imagen" };
+      var bar = el("attachBar"); if (bar) bar.classList.add("on");
+      var prev = el("attachPrev"); if (prev) prev.src = dataUrl;
+      var nm = el("attachName"); if (nm) nm.textContent = pendingImage.name;
+      toast("Imagen lista — envia con un mensaje");
+    };
+    reader.readAsDataURL(file);
+  }
+  function wantsImageGen(text) {
+    return /\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\b.{0,48}\b(imagen|image|img|foto|picture|dibujo)\b/i.test(text)
+      || /^\/image\b/i.test(text)
+      || /^\/img\b/i.test(text);
+  }
   async function send(forcedText) {
     if (sending) return;
     var promptEl = el("prompt");
     var text = (forcedText != null ? forcedText : (promptEl ? promptEl.value : "")).trim();
-    if (!text) return;
+    if (!text && !pendingImage) return;
+    if (!text) text = "(imagen adjunta)";
     if (!current()) newChat();
     var c = current(); if (!c) return;
-    sending = true; var sendBtn = el("send"); if (sendBtn) sendBtn.disabled = true;
-    c.messages.push({ role: "user", text: text });
-    if (c.messages.filter(function (m) { return m.role === "user"; }).length === 1) c.title = text.slice(0, 34) + (text.length > 34 ? "..." : "");
-    c.updated = Date.now(); appendMessage("user", text, true);
+
+    sending = true;
+    var sendBtn = el("send"); if (sendBtn) sendBtn.disabled = true;
+
+    var preview = pendingImage ? pendingImage.preview : null;
+    var imgPayload = pendingImage ? { mimeType: pendingImage.mimeType, data: pendingImage.data } : null;
+
+    c.messages.push({ role: "user", text: text, imagePreview: preview || undefined });
+    if (c.messages.filter(function (m) { return m.role === "user"; }).length === 1) {
+      c.title = text.slice(0, 34) + (text.length > 34 ? "..." : "");
+    }
+    c.updated = Date.now();
+    appendMessage("user", text, true, preview);
     if (promptEl) { promptEl.value = ""; promptEl.style.height = "auto"; }
+    clearPendingImage();
+
     var rm = text.match(/recuerda que (.+)/i);
-    if (rm) { var note = rm[1].trim().slice(0, 240); if (note && longTerm.indexOf(note) < 0) { longTerm.push(note); store.set("longTerm", longTerm); toast("Guardado en memoria"); } }
+    if (rm) {
+      var note = rm[1].trim().slice(0, 240);
+      if (note && longTerm.indexOf(note) < 0) {
+        longTerm.push(note); store.set("longTerm", longTerm); toast("Guardado en memoria");
+      }
+    }
+
     document.querySelectorAll(".nova-wait").forEach(function (n) { n.remove(); });
-    var wait = document.createElement("div"); wait.className = "message assistant nova-wait";
+    var wait = document.createElement("div");
+    wait.className = "message assistant nova-wait";
     wait.innerHTML = "<div class=\"avatar\">N</div><div class=\"bubble typing\">pensando...</div>";
     var root = el("chatInner"); if (root) root.appendChild(wait);
     var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight;
+
     var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+
+    // Image generation (Pollinations — no key)
+    if (wantsImageGen(text) && !imgPayload) {
+      try {
+        var imgPrompt = text.replace(/^\/(image|img)\s*/i, "")
+          .replace(/\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\s+(una\s+)?(imagen|image|foto|picture|dibujo)?\s*(de|of)?\s*/i, "")
+          .trim() || text;
+        var poll = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imgPrompt) + "?width=768&height=768&nologo=true&seed=" + Date.now();
+        var answer = "Imagen generada: " + imgPrompt;
+        c.messages.push({ role: "assistant", text: answer, imageUrl: poll });
+        saveChats();
+        if (wait.parentNode) wait.remove();
+        appendMessage("assistant", answer, true, poll);
+        if (autoSpeak) speakText("Imagen generada");
+        sending = false; if (sendBtn) sendBtn.disabled = false; renderHistory();
+        return;
+      } catch (e) { /* fall through to chat */ }
+    }
+
     try {
-      var payload = { messages: c.messages.slice(-16).map(function (m) { return { role: m.role, content: m.text }; }), memories: [], longTerm: longTerm.slice(-40), personality: mode, values: settings.values, goals: settings.selfNote, useSearch: true, useGoogleSearch: true };
+      var payload = {
+        messages: c.messages.slice(-16).map(function (m) { return { role: m.role, content: m.text }; }),
+        memories: [],
+        longTerm: longTerm.slice(-40),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: true,
+        useGoogleSearch: true,
+        image: imgPayload
+      };
       var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
       var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 90000) : null;
-      var res = await fetch(url + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined });
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl ? ctrl.signal : undefined
+      });
       if (timer) clearTimeout(timer);
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
       var answer = String(data.reply || "Sin respuesta");
-      c.messages.push({ role: "assistant", text: answer }); saveChats();
-      if (wait.parentNode) wait.remove(); appendMessage("assistant", answer, true);
+      var outImg = data.imageUrl || null;
+      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined });
+      saveChats();
+      if (wait.parentNode) wait.remove();
+      appendMessage("assistant", answer, true, outImg);
       if (autoSpeak) speakText(answer);
     } catch (err) {
       if (wait.parentNode) wait.remove();
-      var msg = (err && err.name === "AbortError") ? "Tiempo agotado. Reintenta en 20s." : ("No pude conectar (" + url + "): " + (err && err.message ? err.message : err));
-      c.messages.push({ role: "assistant", text: msg }); saveChats(); appendMessage("assistant", msg, true); toast(String(msg).slice(0, 60));
-    } finally { sending = false; if (sendBtn) sendBtn.disabled = false; renderHistory(); }
+      var msg = (err && err.name === "AbortError")
+        ? "Tiempo agotado. Reintenta en 20s."
+        : ("No pude conectar (" + url + "): " + (err && err.message ? err.message : err));
+      c.messages.push({ role: "assistant", text: msg });
+      saveChats();
+      appendMessage("assistant", msg, true);
+      toast(String(msg).slice(0, 60));
+    } finally {
+      sending = false;
+      if (sendBtn) sendBtn.disabled = false;
+      renderHistory();
+    }
   }
+
   function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") renderLt(); if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; } }
   function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
   function renderLt() { var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
@@ -274,6 +385,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("settingsBtn", function () { openModal("settingsModal"); });
     click("mobileSettings", function () { openModal("settingsModal"); });
     click("btnMic", dictationOnce);
+    click("btnImg", function () { var f = el("fileImg"); if (f) f.click(); });
+    click("btnClearImg", clearPendingImage);
+    click("btnGen", function () {
+      var p = el("prompt");
+      if (p && !p.value.trim()) p.value = "genera una imagen de ";
+      if (p) p.focus();
+      toast("Escribe que imagen quieres y envia");
+    });
+    var fileImg = el("fileImg");
+    if (fileImg) {
+      fileImg.onchange = function () {
+        if (this.files && this.files[0]) setPendingImage(this.files[0]);
+        this.value = "";
+      };
+    }
+
     click("ltAdd", function () { var v = (el("ltInput").value || "").trim(); if (!v) return; if (longTerm.indexOf(v) < 0) longTerm.push(v); store.set("longTerm", longTerm); el("ltInput").value = ""; renderLt(); toast("Guardado"); });
     click("ltClear", function () { if (confirm("Borrar memoria?")) { longTerm = []; store.set("longTerm", longTerm); renderLt(); } });
     click("saveSettings", function () { settings = { values: (el("values").value || "").trim() || "honestidad, curiosidad", selfNote: (el("selfNote").value || "").trim() || "ayudar" }; store.set("settings", settings); var u = (el("apiUrl").value || DEFAULT_API).trim().replace(/\/$/, ""); if (!u) u = DEFAULT_API; apiUrl = u; store.set("apiUrl", u); autoSpeak = !!(el("optSpeak") && el("optSpeak").checked); store.set("autoSpeak", autoSpeak); closeModal("settingsModal"); toast("Guardado"); });
