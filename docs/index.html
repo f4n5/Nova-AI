@@ -481,9 +481,9 @@ function renderChat(){
   }
   $("#chat").scrollTop=$("#chat").scrollHeight;
   renderHistory();
-  }
+}
 
- async function send(text){
+async function send(text){
   var promptEl=$("#prompt");
   var t=(text!=null?text:promptEl.value).trim();
   if(!t && !pendingImage)return;
@@ -544,7 +544,12 @@ function renderChat(){
   wait.innerHTML='<div class="avatar">N</div><div class="bubble typing"><span class="dots"><span></span><span></span><span></span></span> pensando…</div>';
   $("#chatInner").appendChild(wait); $("#chat").scrollTop=$("#chat").scrollHeight;
 
-  var useSearch=forceSearch; forceSearch=false; $("#btnSearch").classList.remove("on");
+  var useSearch=forceSearch; forceSearch=false;
+  try{ var bs=$("#btnSearch"); if(bs) bs.classList.remove("on"); }catch(_e){}
+
+  // drop any leftover typing indicators
+  try{ document.querySelectorAll("#nova-wait").forEach(function(n){n.remove()}); }catch(_e){}
+  wait.id="nova-wait";
 
   try{
     var opts=store.get("aiOpts",aiOpts)||aiOpts||{};
@@ -555,24 +560,45 @@ function renderChat(){
       personality:mode,
       values:settings.values,
       goals:settings.selfNote,
-      useSearch:useSearch || opts.autoSearch!==false,
+      useSearch:!!(useSearch || opts.autoSearch!==false),
       useGoogleSearch:opts.useGoogleSearch!==false,
-      secretHappy:secretHappy,
+      secretHappy:!!secretHappy,
       image:imgPayload
     };
     secretHappy=false;
-    var res=await fetch(url+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+
+    var ctrl=typeof AbortController!=="undefined"?new AbortController():null;
+    var timer=ctrl?setTimeout(function(){try{ctrl.abort()}catch(_e){}},90000):null;
+
+    var res=await fetch(url+"/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),
+      signal:ctrl?ctrl.signal:undefined
+    });
+    if(timer)clearTimeout(timer);
+
     var data=await res.json().catch(function(){return{}});
     if(!res.ok)throw new Error(data.error||("HTTP "+res.status));
     var answer=String(data.reply||"Sin respuesta");
-    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)}); saveChats(); wait.remove();
+    c.messages.push({role:"assistant",text:answer,imageUrl:(data.imageUrl||undefined)});
+    saveChats();
+    if(wait && wait.parentNode) wait.remove();
     appendMessage("assistant",answer,true,null,data.imageUrl?{imageUrl:data.imageUrl}:null);
-    if((store.get("aiOpts",aiOpts)||aiOpts).autoSpeak) speakText(answer);
+    try{
+      if((store.get("aiOpts",aiOpts)||aiOpts||{}).autoSpeak) speakText(answer);
+    }catch(_s){}
   }catch(err){
-    wait.remove();
-    var answer="No pude conectar ("+url+"): "+(err&&err.message?err.message:err);
-    c.messages.push({role:"assistant",text:answer}); saveChats(); appendMessage("assistant",answer);
+    if(wait && wait.parentNode) wait.remove();
+    var msg=(err&&err.name==="AbortError")
+      ? "Tiempo de espera agotado. Render a veces tarda en despertar — reintenta en 20s."
+      : ("No pude conectar ("+url+"): "+(err&&err.message?err.message:err));
+    c.messages.push({role:"assistant",text:msg});
+    saveChats();
+    appendMessage("assistant",msg);
+    try{ toast(String(msg).slice(0,80)); }catch(_e){}
   }finally{
+    try{ document.querySelectorAll("#nova-wait").forEach(function(n){n.remove()}); }catch(_e){}
     $("#send").disabled=!$("#prompt").value.trim()&&!pendingImage;
     renderHistory();
   }
