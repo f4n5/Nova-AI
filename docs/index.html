@@ -107,7 +107,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v31</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v32</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -217,7 +217,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v31";
+  var VERSION = "v32";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -486,6 +486,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   function youtubeSearchLink(query) {
     return "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
   }
+  function unlockAudio() {
+    try {
+      var a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAEYsAAAB3AQACABAAZGF0YQAAAAA=");
+      a.volume = 0.01;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+    try { if (window.speechSynthesis) window.speechSynthesis.resume(); } catch (e2) {}
+  }
   function buildMusicPlayer(query) {
     var wrap = document.createElement("div");
     wrap.className = "music-player";
@@ -497,10 +506,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     stopBtn.type = "button";
     stopBtn.textContent = "Cerrar";
     stopBtn.onclick = function () {
-      var ifr = wrap.querySelector("iframe");
-      var aud = wrap.querySelector("audio");
-      if (ifr) ifr.src = "about:blank";
-      if (aud) { try { aud.pause(); aud.removeAttribute("src"); aud.load(); } catch (e) {} }
+      wrap.querySelectorAll("iframe").forEach(function (ifr) { ifr.src = "about:blank"; });
+      wrap.querySelectorAll("audio").forEach(function (aud) {
+        try { aud.pause(); aud.removeAttribute("src"); aud.load(); } catch (e) {}
+      });
       wrap.remove();
       hideNowPlaying();
     };
@@ -511,33 +520,68 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     var spotifyUrl = "https://open.spotify.com/search/" + encodeURIComponent(query);
     var ytUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
 
+    // Autoplay YouTube search embed (user just clicked send)
+    var ytEmbed = "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query) + "&autoplay=1&mute=0";
+    var spEmbed = "https://open.spotify.com/embed/search/" + encodeURIComponent(query);
+
     if (isDirectAudio(query)) {
       var audio = document.createElement("audio");
       audio.controls = true;
       audio.autoplay = true;
       audio.src = query;
       wrap.appendChild(audio);
+      setTimeout(function () { audio.play().catch(function () {}); }, 50);
     } else {
-      // Spotify search embed (playlist/search UI) + YouTube search embed
-      var ifr = document.createElement("iframe");
-      ifr.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-      ifr.allowFullscreen = true;
-      ifr.src = "https://open.spotify.com/embed/search/" + encodeURIComponent(query);
-      ifr.style.height = "152px";
-      wrap.appendChild(ifr);
-      var ifr2 = document.createElement("iframe");
-      ifr2.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-      ifr2.allowFullscreen = true;
-      ifr2.src = "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query);
-      wrap.appendChild(ifr2);
+      // YouTube first — autoplay
+      var ifrYt = document.createElement("iframe");
+      ifrYt.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+      ifrYt.allowFullscreen = true;
+      ifrYt.src = ytEmbed;
+      wrap.appendChild(ifrYt);
+
+      // Spotify embed (may need click inside if not logged in)
+      var ifrSp = document.createElement("iframe");
+      ifrSp.setAttribute("allow", "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture");
+      ifrSp.allowFullscreen = true;
+      ifrSp.style.height = "152px";
+      ifrSp.src = spEmbed;
+      wrap.appendChild(ifrSp);
+
       var links = document.createElement("div");
-      links.style.cssText = "display:flex;gap:10px;padding:8px 12px;flex-wrap:wrap";
-      var a1 = document.createElement("a"); a1.className = "mp-link"; a1.href = spotifyUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.textContent = "Abrir en Spotify";
-      var a2 = document.createElement("a"); a2.className = "mp-link"; a2.href = ytUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.textContent = "Abrir en YouTube";
-      links.appendChild(a1); links.appendChild(a2);
+      links.style.cssText = "display:flex;gap:10px;padding:8px 12px;flex-wrap:wrap;align-items:center";
+      var a1 = document.createElement("a"); a1.className = "mp-link"; a1.href = spotifyUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.textContent = "Spotify";
+      var a2 = document.createElement("a"); a2.className = "mp-link"; a2.href = ytUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.textContent = "YouTube";
+      var playBtn = document.createElement("button");
+      playBtn.type = "button";
+      playBtn.textContent = "▶ Forzar play";
+      playBtn.style.cssText = "padding:5px 10px;border-radius:8px;background:#7c6cf0;color:#fff;font-size:.75rem";
+      playBtn.onclick = function () {
+        unlockAudio();
+        ifrYt.src = ytEmbed + "&start=0";
+        toast("Reproduciendo…");
+      };
+      links.appendChild(playBtn); links.appendChild(a1); links.appendChild(a2);
       wrap.appendChild(links);
+
+      // iTunes 30s preview autoplay (works more often) + metadata
+      fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var item = data && data.results && data.results[0];
+          if (!item) return;
+          if (item.previewUrl) {
+            var prev = document.createElement("audio");
+            prev.controls = true;
+            prev.autoplay = true;
+            prev.src = item.previewUrl;
+            prev.style.marginTop = "4px";
+            wrap.insertBefore(prev, links);
+            setTimeout(function () { prev.play().catch(function () {}); }, 80);
+          }
+        })
+        .catch(function () {});
     }
-    // corner now-playing with art + lyrics hint
+
     showNowPlaying(query, spotifyUrl, ytUrl);
     return wrap;
   }
@@ -550,41 +594,33 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!np) return;
     np.classList.add("on");
     el("npTitle").textContent = query;
-    el("npArtist").textContent = "Buscando…";
-    el("npLyrics").textContent = "Cargando info de la canción…";
+    el("npArtist").textContent = "Reproduciendo…";
+    el("npLyrics").textContent = "Autoplay: YouTube + preview. Spotify abre el tema en la app/web.";
     el("npArt").removeAttribute("src");
     var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query));
     var yt = el("npYoutube"); if (yt) yt.href = ytUrl || ("https://www.youtube.com/results?search_query=" + encodeURIComponent(query));
-    // iTunes Search API (no key) for cover + metadata
     fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var item = data && data.results && data.results[0];
         if (!item) {
           el("npArtist").textContent = "Spotify / YouTube";
-          el("npLyrics").textContent = "Sin ficha en iTunes. Abre Spotify para reproducir con letra si está disponible.";
           return;
         }
         el("npTitle").textContent = item.trackName || query;
         el("npArtist").textContent = (item.artistName || "") + (item.collectionName ? " · " + item.collectionName : "");
         var art = item.artworkUrl100 ? String(item.artworkUrl100).replace("100x100bb", "200x200bb") : "";
         if (art) el("npArt").src = art;
-        el("npLyrics").textContent = "“" + (item.trackName || query) + "” — " + (item.artistName || "") +
-          ". Letra completa en Spotify (Premium) o Genius. Reproductor embebido arriba.";
-        if (item.trackViewUrl) {
-          // prefer spotify search still; keep itunes as extra data
-        }
+        el("npLyrics").textContent = "“" + (item.trackName || query) + "” — " + (item.artistName || "") + ". Preview 30s + YouTube autoplay.";
       })
-      .catch(function () {
-        el("npArtist").textContent = "Spotify / YouTube";
-        el("npLyrics").textContent = "No se pudo cargar la portada. Usa Spotify para la canción.";
-      });
+      .catch(function () {});
   }
   function attachMusicToBubble(body, query) {
     if (!query || !body) return;
     body.querySelectorAll(".music-player").forEach(function (n) { n.remove(); });
     body.appendChild(buildMusicPlayer(query));
   }
+
   function setAvatarMusicMode(on) {
     // mark last assistant avatar
     var avatars = document.querySelectorAll(".message.assistant .avatar");
@@ -694,6 +730,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!userMusicQ && wantsMusic(text)) {
       userMusicQ = text.replace(/^\/(?:music|musica|song)\s*/i, "").trim() || "musica relajante";
     }
+    if (userMusicQ || wantsMusic(text)) { try { unlockAudio(); } catch (e) {} }
 
     document.querySelectorAll(".nova-wait").forEach(function (n) { n.remove(); });
     var wait = document.createElement("div");
