@@ -438,8 +438,8 @@ app.post("/api/image", async (req, res) => {
 
   const pollinations =
     "https://image.pollinations.ai/prompt/" +
-    encodeURIComponent(prompt) +
-    "?width=768&height=768&nologo=true";
+    encodeURIComponent(String(prompt).slice(0, 300)) +
+    "?model=flux&width=768&height=768&nologo=true&enhance=true";
 
   // Optional Gemini native image (often needs billing)
   const imgModel = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-preview-image-generation";
