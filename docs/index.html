@@ -75,12 +75,39 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .secondary{padding:9px 14px;border-radius:10px;border:1px solid var(--border2);background:#fafafa;font-size:.88rem}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#221d38;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60;font-size:.85rem;max-width:90vw}
 @media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 10px calc(12px + env(safe-area-inset-bottom,0px))}}
-.tool.listening{background:#fee2e2;border-color:#f87171;animation:micpulse 1.2s ease-in-out infinite}@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}70%{box-shadow:0 0 0 8px transparent}}</style>
+.tool.listening{background:#fee2e2;border-color:#f87171;animation:micpulse 1.2s ease-in-out infinite}@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}70%{box-shadow:0 0 0 8px transparent}}
+.music-player{margin-top:10px;border:1px solid var(--border2);border-radius:14px;overflow:hidden;background:#0f1117;color:#e8e8f0}
+.music-player .mp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#1a1d27;font-size:.8rem}
+.music-player .mp-head button{padding:4px 8px;border-radius:8px;background:#2a2f3d;color:#e8e8f0;font-size:.72rem}
+.music-player iframe{width:100%;height:200px;border:0;display:block;background:#000}
+.music-player audio{width:100%;display:block;padding:8px;box-sizing:border-box}
+.music-player .mp-link{display:block;padding:8px 12px;font-size:.78rem;color:#a5b4fc;word-break:break-all}
+
+.avatar.music-mode{background:linear-gradient(135deg,#fde68a,#a78bfa);font-size:.95rem}
+.typing-dots{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:#9a9aaa;animation:tdot 1.2s infinite ease-in-out}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.now-playing{position:fixed;right:14px;bottom:90px;z-index:40;width:min(280px,calc(100vw - 28px));background:#12131a;color:#eee;border:1px solid #2a2f3d;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden;display:none}
+.now-playing.on{display:block;animation:npIn .25s ease}
+@keyframes npIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.now-playing .np-row{display:flex;gap:10px;padding:10px}
+.now-playing img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#222;flex-shrink:0}
+.now-playing .np-meta{min-width:0;flex:1}
+.now-playing .np-title{font-size:.85rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-playing .np-artist{font-size:.75rem;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-playing .np-lyrics{font-size:.72rem;color:#c8c8d0;max-height:72px;overflow:auto;padding:0 10px 8px;line-height:1.35;opacity:.9}
+.now-playing .np-actions{display:flex;gap:6px;padding:0 10px 10px;flex-wrap:wrap}
+.now-playing .np-actions a,.now-playing .np-actions button{font-size:.7rem;padding:5px 8px;border-radius:8px;background:#2a2f3d;color:#e8e8f0;text-decoration:none;border:0}
+.bubble .stream-caret{display:inline-block;width:7px;height:1em;background:#7c6cf0;margin-left:2px;animation:blink .9s step-end infinite;vertical-align:text-bottom}
+@keyframes blink{50%{opacity:0}}
+</style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v29.1</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v31</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -115,6 +142,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <input type="file" id="fileImg" accept="image/*" hidden />
         <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
         <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
+        <button type="button" class="tool" id="btnMusic" title="Poner musica">🎵</button>
         <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
         <button type="button" class="tool" id="btnParlant" title="Parlante Hey Nova">🔊</button>
         <button type="button" class="send" id="send">↑</button>
@@ -169,12 +197,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button type="button" class="primary" id="saveSettings">Guardar</button>
   </div>
 </div></div>
+<div class="now-playing" id="nowPlaying">
+  <div class="np-row">
+    <img id="npArt" alt="" />
+    <div class="np-meta">
+      <div class="np-title" id="npTitle">—</div>
+      <div class="np-artist" id="npArtist">—</div>
+    </div>
+  </div>
+  <div class="np-lyrics" id="npLyrics">Buscando letra…</div>
+  <div class="np-actions">
+    <a id="npSpotify" href="#" target="_blank" rel="noopener">Spotify</a>
+    <a id="npYoutube" href="#" target="_blank" rel="noopener">YouTube</a>
+    <button type="button" id="npClose">Cerrar</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v29.1";
+  var VERSION = "v31";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -352,38 +395,45 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   }
   function stripVoiceDirectives(text) {
     var out = String(text || "");
-    var m = out.match(/\[\[\s*voz\s*:\s*([^\]]+)\]\]/i) || out.match(/\[\s*voz\s*:\s*([^\]]+)\]/i);
-    if (m) {
-      applyVoicePreference(m[1].trim());
-      out = out.replace(m[0], "").trim();
-    }
+
+    // Bracket tags: [[voz:…]] [voz:…] [[tono:…]]
+    out = out.replace(/\[\[\s*voz\s*:\s*([^\]]+)\]\]/gi, function (_, v) { applyVoicePreference(v.trim()); return ""; });
+    out = out.replace(/\[\s*voz\s*:\s*([^\]]+)\]/gi, function (_, v) { applyVoicePreference(v.trim()); return ""; });
+    out = out.replace(/\[\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]\]/gi, function (_, v) { applyTone(v.trim()); return ""; });
+    out = out.replace(/\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]/gi, function (_, v) { applyTone(v.trim()); return ""; });
+
+    // Bare lines / inline the model often dumps: voz:femenina  tono:alegre
+    out = out.replace(/(^|\n)\s*voz\s*:\s*([a-záéíóúñ\w\- ]{2,40})\s*/gi, function (_, p, v) { applyVoicePreference(v.trim()); return p; });
+    out = out.replace(/(^|\n)\s*tono\s*:\s*([a-záéíóúñ\w\- ]{2,40})\s*/gi, function (_, p, v) { applyTone(v.trim()); return p; });
+    out = out.replace(/\bvoz\s*:\s*(femenina|masculina|suave|clara|auto|female|male|soft|bright)\b/gi, function (_, v) { applyVoicePreference(v); return ""; });
+    out = out.replace(/\btono\s*:\s*(alegre|triste|emocionada|suave|seria|juguetona|neutral|happy|sad|excited|calm|serious|playful)\b/gi, function (_, v) { applyTone(v); return ""; });
+
+    // Natural language
     var n = out.match(/(?:cambio(?:\s+mi)?\s+voz\s+a|prefiero\s+voz|usar[eé]\s+voz)\s+([^\n.]+)/i);
     if (n) applyVoicePreference(n[1].trim());
-    // tone / emotion tags
-    var t1 = out.match(/\[\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]\]/i)
-          || out.match(/\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]/i);
-    if (t1) {
-      applyTone(t1[1].trim());
-      out = out.replace(t1[0], "").trim();
-    }
-    var t2 = out.match(/(?:hablo\s+con\s+tono|tono\s*:|me\s+pongo\s+)\s*([a-záéíóúñ]+)/i);
+    var t2 = out.match(/(?:hablo\s+con\s+tono|me\s+pongo)\s+([a-záéíóúñ]+)/i);
     if (t2) applyTone(t2[1].trim());
-    return out;
+
+    // music tags stripped from visible text (player uses extractMusicQuery before this)
+    out = out.replace(/\[\[\s*music\s*:\s*[^\]]+\]\]/gi, "");
+    out = out.replace(/\[\s*music\s*:\s*[^\]]+\]/gi, "");
+
+    return out.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   }
   function speechClean(text) {
     var s = stripVoiceDirectives(String(text || ""));
-    // never speak markdown markers or code fences
     s = s.replace(/```[\s\S]*?```/g, " ");
     s = s.replace(/`([^`]+)`/g, "$1");
     s = s.replace(/\*\*([^*]+)\*\*/g, "$1");
     s = s.replace(/\*([^*]+)\*/g, "$1");
     s = s.replace(/__([^_]+)__/g, "$1");
     s = s.replace(/_([^_]+)_/g, "$1");
-    s = s.replace(/[#>*_~`]/g, " ");
-    s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"); // [label](url) -> label
-    s = s.replace(/https?:\/\/\S+/g, " ");
-    s = s.replace(/\s+/g, " ").trim();
-    return s;
+    s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    s = s.replace(/https?:\/\/\S+/gi, " ");
+    // never read leftover control words
+    s = s.replace(/\b(voz|tono|music)\s*:\s*\S+/gi, " ");
+    s = s.replace(/[*_#>`~\[\]]/g, " ");
+    return s.replace(/\s+/g, " ").trim();
   }
   function speakText(text) {
     try {
@@ -397,17 +447,157 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       u.rate = (tp && tp.rate) || 1;
       u.pitch = (tp && tp.pitch) || 1;
       var v = pickVoice();
-      if (v) {
-        u.voice = v;
-        if (v.lang) u.lang = v.lang;
-      }
+      if (v) { u.voice = v; if (v.lang) u.lang = v.lang; }
       window.speechSynthesis.speak(u);
-    } catch (err) {
-      console.warn("speak", err);
+    } catch (err) { console.warn("speak", err); }
+  }
+
+
+  function wantsMusic(text) {
+    return /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b.{0,40}\b(musica|música|cancion|canción|tema|song|track|playlist)\b/i.test(text)
+      || /\b(musica|música|cancion|canción)\b.{0,24}\b(de|of)\b/i.test(text)
+      || /^\/(music|musica|song)\b/i.test(text);
+  }
+  function extractMusicQuery(text) {
+    var s = String(text || "");
+    var m = s.match(/\[\[\s*music\s*:\s*([^\]]+)\]\]/i) || s.match(/\[\s*music\s*:\s*([^\]]+)\]/i);
+    if (m) return m[1].trim();
+    m = s.match(/^\/(?:music|musica|song)\s+(.+)/i);
+    if (m) return m[1].trim();
+    m = s.match(/\b(?:pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\s+(?:la\s+|el\s+|una\s+|me\s+)?(?:musica|música|cancion|canción|tema|song|track)?\s*(?:de\s+)?(.+)/i);
+    if (m) return m[1].replace(/[?.!]+$/, "").trim();
+    m = s.match(/\b(?:musica|música|cancion|canción)\s+(?:de\s+)?(.+)/i);
+    if (m) return m[1].replace(/[?.!]+$/, "").trim();
+    return "";
+  }
+  function stripMusicTags(text) {
+    return String(text || "")
+      .replace(/\[\[\s*music\s*:\s*[^\]]+\]\]/ig, "")
+      .replace(/\[\s*music\s*:\s*[^\]]+\]/ig, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+  function isDirectAudio(url) {
+    return /\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(String(url || ""));
+  }
+  function youtubeSearchEmbed(query) {
+    return "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query);
+  }
+  function youtubeSearchLink(query) {
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+  }
+  function buildMusicPlayer(query) {
+    var wrap = document.createElement("div");
+    wrap.className = "music-player";
+    var head = document.createElement("div");
+    head.className = "mp-head";
+    var title = document.createElement("span");
+    title.textContent = "🎵 " + query;
+    var stopBtn = document.createElement("button");
+    stopBtn.type = "button";
+    stopBtn.textContent = "Cerrar";
+    stopBtn.onclick = function () {
+      var ifr = wrap.querySelector("iframe");
+      var aud = wrap.querySelector("audio");
+      if (ifr) ifr.src = "about:blank";
+      if (aud) { try { aud.pause(); aud.removeAttribute("src"); aud.load(); } catch (e) {} }
+      wrap.remove();
+      hideNowPlaying();
+    };
+    head.appendChild(title);
+    head.appendChild(stopBtn);
+    wrap.appendChild(head);
+
+    var spotifyUrl = "https://open.spotify.com/search/" + encodeURIComponent(query);
+    var ytUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+
+    if (isDirectAudio(query)) {
+      var audio = document.createElement("audio");
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.src = query;
+      wrap.appendChild(audio);
+    } else {
+      // Spotify search embed (playlist/search UI) + YouTube search embed
+      var ifr = document.createElement("iframe");
+      ifr.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      ifr.allowFullscreen = true;
+      ifr.src = "https://open.spotify.com/embed/search/" + encodeURIComponent(query);
+      ifr.style.height = "152px";
+      wrap.appendChild(ifr);
+      var ifr2 = document.createElement("iframe");
+      ifr2.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      ifr2.allowFullscreen = true;
+      ifr2.src = "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query);
+      wrap.appendChild(ifr2);
+      var links = document.createElement("div");
+      links.style.cssText = "display:flex;gap:10px;padding:8px 12px;flex-wrap:wrap";
+      var a1 = document.createElement("a"); a1.className = "mp-link"; a1.href = spotifyUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.textContent = "Abrir en Spotify";
+      var a2 = document.createElement("a"); a2.className = "mp-link"; a2.href = ytUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.textContent = "Abrir en YouTube";
+      links.appendChild(a1); links.appendChild(a2);
+      wrap.appendChild(links);
+    }
+    // corner now-playing with art + lyrics hint
+    showNowPlaying(query, spotifyUrl, ytUrl);
+    return wrap;
+  }
+  function hideNowPlaying() {
+    var np = el("nowPlaying");
+    if (np) np.classList.remove("on");
+  }
+  function showNowPlaying(query, spotifyUrl, ytUrl) {
+    var np = el("nowPlaying");
+    if (!np) return;
+    np.classList.add("on");
+    el("npTitle").textContent = query;
+    el("npArtist").textContent = "Buscando…";
+    el("npLyrics").textContent = "Cargando info de la canción…";
+    el("npArt").removeAttribute("src");
+    var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query));
+    var yt = el("npYoutube"); if (yt) yt.href = ytUrl || ("https://www.youtube.com/results?search_query=" + encodeURIComponent(query));
+    // iTunes Search API (no key) for cover + metadata
+    fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(query) + "&media=music&limit=1")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var item = data && data.results && data.results[0];
+        if (!item) {
+          el("npArtist").textContent = "Spotify / YouTube";
+          el("npLyrics").textContent = "Sin ficha en iTunes. Abre Spotify para reproducir con letra si está disponible.";
+          return;
+        }
+        el("npTitle").textContent = item.trackName || query;
+        el("npArtist").textContent = (item.artistName || "") + (item.collectionName ? " · " + item.collectionName : "");
+        var art = item.artworkUrl100 ? String(item.artworkUrl100).replace("100x100bb", "200x200bb") : "";
+        if (art) el("npArt").src = art;
+        el("npLyrics").textContent = "“" + (item.trackName || query) + "” — " + (item.artistName || "") +
+          ". Letra completa en Spotify (Premium) o Genius. Reproductor embebido arriba.";
+        if (item.trackViewUrl) {
+          // prefer spotify search still; keep itunes as extra data
+        }
+      })
+      .catch(function () {
+        el("npArtist").textContent = "Spotify / YouTube";
+        el("npLyrics").textContent = "No se pudo cargar la portada. Usa Spotify para la canción.";
+      });
+  }
+  function attachMusicToBubble(body, query) {
+    if (!query || !body) return;
+    body.querySelectorAll(".music-player").forEach(function (n) { n.remove(); });
+    body.appendChild(buildMusicPlayer(query));
+  }
+  function setAvatarMusicMode(on) {
+    // mark last assistant avatar
+    var avatars = document.querySelectorAll(".message.assistant .avatar");
+    if (!avatars.length) return;
+    var av = avatars[avatars.length - 1];
+    if (on) {
+      av.classList.add("music-mode");
+      av.textContent = "🎧";
+      av.title = "Modo musica";
     }
   }
 
-  function appendMessage(role, text, scroll, imgUrl) {
+  function appendMessage(role, text, scroll, imgUrl, musicQuery) {
     var root = el("chatInner"); if (!root) return;
     var w = root.querySelector(".welcome"); if (w) w.remove();
     var wrap = document.createElement("div"); wrap.className = "message " + (role === "user" ? "user" : "assistant");
@@ -416,6 +606,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (role === "assistant") {
       fillRich(body, text);
       if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
+      if (musicQuery) attachMusicToBubble(body, musicQuery);
       var tools = document.createElement("div"); tools.className = "msg-tools";
       var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
       var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
@@ -433,7 +624,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!c || !c.messages.length) {
       root.innerHTML = "<div class=\"welcome\"><div class=\"orb\"></div><h1>Que quieres explorar hoy?</h1><p>Nova " + VERSION + " — chat estable.</p><div class=\"suggestions\"><button type=\"button\" data-prompt=\"Hola Nova\">Hola</button><button type=\"button\" data-prompt=\"Que puedes hacer?\">Capacidades</button><button type=\"button\" data-prompt=\"Explica algo de programacion\">Codigo</button><button type=\"button\" data-prompt=\"Recuerda que prefiero respuestas claras\">Memoria</button></div></div>";
       root.querySelectorAll("[data-prompt]").forEach(function (b) { b.onclick = function () { send(b.getAttribute("data-prompt")); }; });
-    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview); }); }
+    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview, m.musicQuery); }); }
     var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight; renderHistory();
   }
   var sending = false;
@@ -497,10 +688,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       }
     }
 
+    
+    // Music intercept — play even if backend is slow
+    var userMusicQ = extractMusicQuery(text);
+    if (!userMusicQ && wantsMusic(text)) {
+      userMusicQ = text.replace(/^\/(?:music|musica|song)\s*/i, "").trim() || "musica relajante";
+    }
+
     document.querySelectorAll(".nova-wait").forEach(function (n) { n.remove(); });
     var wait = document.createElement("div");
     wait.className = "message assistant nova-wait";
-    wait.innerHTML = "<div class=\"avatar\">N</div><div class=\"bubble typing\">pensando...</div>";
+    wait.innerHTML = "<div class=\"avatar\">N</div><div class=\"bubble typing\"><span class=\"typing-dots\"><span></span><span></span><span></span></span> escribiendo…</div>";
     var root = el("chatInner"); if (root) root.appendChild(wait);
     var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight;
 
@@ -587,12 +785,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       if (timer) clearTimeout(timer);
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
-      var answer = stripVoiceDirectives(String(data.reply || "Sin respuesta"));
+      var rawAnswer = String(data.reply || "Sin respuesta");
+      var musicQ = extractMusicQuery(rawAnswer);
+      var answer = stripMusicTags(stripVoiceDirectives(rawAnswer));
       var outImg = data.imageUrl || null;
-      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined });
+      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined, musicQuery: musicQ || undefined });
       saveChats();
       if (wait.parentNode) wait.remove();
-      appendMessage("assistant", answer, true, outImg);
+      var finalMusic = musicQ || (typeof userMusicQ !== "undefined" ? userMusicQ : "");
+      appendMessage("assistant", answer, true, outImg, finalMusic || null);
+      if (finalMusic) setAvatarMusicMode(true);
       if (autoSpeak) speakText(answer);
     } catch (err) {
       if (wait.parentNode) wait.remove();
@@ -775,9 +977,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("settingsBtn", function () { openModal("settingsModal"); });
     click("mobileSettings", function () { openModal("settingsModal"); });
     click("btnMic", dictationOnce);
+    click("npClose", hideNowPlaying);
     click("btnParlant", toggleParlant);
     click("btnImg", function () { var f = el("fileImg"); if (f) f.click(); });
     click("btnClearImg", clearPendingImage);
+    click("btnMusic", function () {
+      var p = el("prompt");
+      if (p && !p.value.trim()) p.value = "pon musica de ";
+      if (p) p.focus();
+      toast("Escribe la cancion o artista y envia");
+    });
     click("btnGen", function () {
       var p = el("prompt");
       if (p && !p.value.trim()) p.value = "genera una imagen de ";
