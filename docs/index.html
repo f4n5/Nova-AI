@@ -80,7 +80,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v29</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v29.1</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -174,7 +174,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v29";
+  var VERSION = "v29.1";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -188,6 +188,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   var settings = store.get("settings", { values: "honestidad, curiosidad, respeto", selfNote: "ayudar y explorar" });
   var mode = store.get("mode", "equilibrado") || "equilibrado";
   var autoSpeak = !!store.get("autoSpeak", false);
+  var voiceType = store.get("voiceType", "auto") || "auto";
+  var voiceName = store.get("voiceName", "") || "";
+  var voiceRate = Number(store.get("voiceRate", 1)) || 1;
+  var toneMood = store.get("toneMood", "neutral") || "neutral";
   var pendingImage = null; // {mimeType,data,preview,name}
   var apiUrl = store.get("apiUrl", "");
   if (typeof apiUrl !== "string" || !apiUrl || /tu-servicio/i.test(apiUrl)) apiUrl = DEFAULT_API;
@@ -594,7 +598,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       if (wait.parentNode) wait.remove();
       var msg = (err && err.name === "AbortError")
         ? "Tiempo agotado. Reintenta en 20s."
-        : ("No pude conectar (" + url + "): " + (err && err.message ? err.message : err));
+        : ("Error: " + (err && err.message ? err.message : err) + " · " + url);
       c.messages.push({ role: "assistant", text: msg });
       saveChats();
       appendMessage("assistant", msg, true);
