@@ -126,9 +126,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .bubble .stream-caret{display:inline-block;width:7px;height:1em;background:#7c6cf0;margin-left:2px;animation:blink .9s step-end infinite;vertical-align:text-bottom}
 @keyframes blink{50%{opacity:0}}
 
-.avatar-panel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;width:min(360px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.avatar-panel{display:none;position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:auto;top:auto;transform:none;z-index:45;width:min(260px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden}
 .avatar-panel.on{display:block;animation:npIn .2s ease}
-.avatar-stage{height:min(420px,55vh);background:radial-gradient(ellipse at 50% 80%,#3d2f6b 0%,#12141c 55%,#0a0b10 100%);position:relative;overflow:hidden}
+.avatar-stage{height:200px;background:radial-gradient(ellipse at 50% 80%,#3d2f6b 0%,#12141c 55%,#0a0b10 100%);position:relative;overflow:hidden}
 .avatar-stage canvas{width:100%!important;height:100%!important;display:block}
 .avatar-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
 .avatar-face{font-size:72px;line-height:1;animation:avatarBob 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))}
@@ -139,7 +139,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .avatar-controls button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#f4f4f8;font-size:.72rem;cursor:pointer}
 .avatar-controls button.on{background:#7c6cf0;color:#fff;border-color:#7c6cf0}
 @media(max-width:720px){
-.avatar-panel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;width:min(360px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.avatar-panel{display:none;position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:auto;top:auto;transform:none;z-index:45;width:min(260px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden}
 .avatar-stage{height:180px}
 }
 </style>
@@ -147,7 +147,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v38</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v39</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -161,6 +161,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <header class="topbar">
     <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
     <div class="top-actions">
+      <button type="button" class="iconbtn" id="authBtn" title="Cuenta">👤</button>
       <button type="button" class="iconbtn" id="avatarBtn" title="Avatar 3D" aria-label="Avatar">🧍</button>
       <select class="mode-select" id="modeSelect">
         <option value="equilibrado">Equilibrado</option>
@@ -270,12 +271,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button type="button" id="avatarClose">Cerrar</button>
   </div>
 </div>
+<div class="modal-backdrop" id="authModal"><div class="modal">
+  <h2>Cuenta</h2>
+  <p style="font-size:.88rem;color:var(--muted);margin:0 0 12px">Inicia sesión para sincronizar memoria, avatar y preferencias entre dispositivos.</p>
+  <div id="authSignedOut">
+    <button type="button" class="primary" id="btnGoogle" style="width:100%;margin-bottom:8px">Continuar con Google</button>
+    <button type="button" class="secondary" id="btnGithub" style="width:100%;margin-bottom:8px">Continuar con GitHub</button>
+    <p style="font-size:.75rem;color:var(--muted)">O modo local (este navegador):</p>
+    <input id="authLocalName" placeholder="Tu nombre" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;border:1px solid var(--border)" />
+    <button type="button" class="secondary" id="btnLocalAuth" style="width:100%">Guardar perfil local</button>
+  </div>
+  <div id="authSignedIn" style="display:none">
+    <p><strong id="authUserName">—</strong></p>
+    <p style="font-size:.8rem;color:var(--muted)" id="authUserEmail"></p>
+    <button type="button" class="secondary" id="btnSignOut" style="width:100%;margin-top:10px">Cerrar sesión</button>
+  </div>
+  <div class="modal-actions" style="margin-top:14px">
+    <button type="button" class="secondary" data-close="authModal">Cerrar</button>
+  </div>
+</div></div>
 <div class="toast" id="toast"></div>
 <script>
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v38";
+  var VERSION = "v39";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -293,6 +313,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   var voiceName = store.get("voiceName", "") || "";
   var voiceRate = Number(store.get("voiceRate", 1)) || 1;
   var toneMood = store.get("toneMood", "neutral") || "neutral";
+  var authUser = store.get("authUser", null);
+  var profile = store.get("profile", null) || { name: "", likes: [], notes: [] };
   var tasks = store.get("tasks", []);
   if (!Array.isArray(tasks)) tasks = [];
   function saveTasks() { store.set("tasks", tasks); }
@@ -918,6 +940,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (promptEl) { promptEl.value = ""; promptEl.style.height = "auto"; }
     clearPendingImage();
 
+    if (typeof ingestMemoryTags === "function") { try { ingestMemoryTags(text); } catch (e) {} }
     var rm = text.match(/recuerda que (.+)/i);
     if (rm) {
       var note = rm[1].trim().slice(0, 240);
@@ -1006,7 +1029,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var payload = {
         messages: c.messages.slice(-16).map(function (m) { return { role: m.role, content: m.text }; }),
         memories: [],
-        longTerm: longTerm.slice(-40),
+        longTerm: (typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-40)),
         personality: mode,
         values: settings.values,
         goals: settings.selfNote,
@@ -1029,6 +1052,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var musicQ = extractMusicQuery(rawAnswer);
       var answer = stripMusicTags(stripVoiceDirectives(rawAnswer));
       if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      if (typeof ingestMemoryTags === "function") answer = ingestMemoryTags(answer);
       var outImg = data.imageUrl || null;
       // STRICT: music UI only if THIS user message explicitly asked to play music
       var userAskedMusic = wantsMusic(text) || !!(userMusicQ && String(userMusicQ).length > 1);
@@ -1273,7 +1297,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     var map = { happy: "happy", excited: "excited", sad: "sad", angry: "angry", calm: "calm", playful: "happy", serious: "think", neutral: "neutral" };
     return map[mood] || "neutral";
   }
-  function setAvatarExpression(expr) {
+  function setAvatarExpression(expr, show) {
     expr = String(expr || "neutral").toLowerCase();
     if (/alegre|feliz|happy|joy/.test(expr)) expr = "happy";
     else if (/triste|sad/.test(expr)) expr = "sad";
@@ -1295,6 +1319,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       b.classList.toggle("on", b.getAttribute("data-expr") === expr);
     });
     applyAvatarMeshExpr(expr);
+    if (show && typeof openAvatarPanel === "function") openAvatarPanel();
   }
   function applyAvatarMeshExpr(expr) {
     if (!avatarThree || !avatarThree.mouth) return;
@@ -1511,14 +1536,131 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   function stripAvatarTags(text) {
     var out = String(text || "");
     out = out.replace(/\[\[\s*avatar\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
-      setAvatarExpression(v.trim());
+      setAvatarExpression(v.trim(), true);
       return "";
     });
     out = out.replace(/\[\s*avatar\s*:\s*([^\]]+)\]/gi, function (_, v) {
-      setAvatarExpression(v.trim());
+      setAvatarExpression(v.trim(), true);
       return "";
     });
     return out;
+  }
+
+
+  function saveProfile() { store.set("profile", profile); }
+  function saveAuth() { store.set("authUser", authUser); }
+  function isSignedIn() { return !!(authUser && authUser.id); }
+  function displayName() {
+    if (authUser && authUser.name) return authUser.name;
+    if (profile && profile.name) return profile.name;
+    return "";
+  }
+  function refreshAuthUI() {
+    var out = el("authSignedOut");
+    var inn = el("authSignedIn");
+    if (!out || !inn) return;
+    if (isSignedIn() || (profile && profile.name)) {
+      out.style.display = "none";
+      inn.style.display = "block";
+      el("authUserName").textContent = displayName() || "Usuario";
+      el("authUserEmail").textContent = (authUser && authUser.email) || (authUser && authUser.provider) || "Perfil local";
+    } else {
+      out.style.display = "block";
+      inn.style.display = "none";
+    }
+  }
+  function signInLocal() {
+    var name = (el("authLocalName") && el("authLocalName").value || "").trim() || "Usuario";
+    authUser = { id: "local-" + Date.now(), name: name, provider: "local", email: "" };
+    profile.name = name;
+    saveAuth(); saveProfile();
+    if (longTerm.indexOf("Me llamo " + name) < 0) longTerm.push("Me llamo " + name);
+    store.set("longTerm", longTerm);
+    refreshAuthUI();
+    toast("Perfil local guardado");
+    closeModal("authModal");
+  }
+  function signOut() {
+    authUser = null;
+    saveAuth();
+    refreshAuthUI();
+    toast("Sesión cerrada");
+  }
+  // OAuth via backend (Google / GitHub)
+  function startOAuth(provider) {
+    var base = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+    var redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+    window.location.href = base + "/api/auth/" + provider + "?redirect=" + redirect;
+  }
+  function consumeAuthCallback() {
+    try {
+      var hash = window.location.hash || "";
+      var q = window.location.search || "";
+      var m = hash.match(/auth=([^&]+)/) || q.match(/[?&]auth=([^&]+)/);
+      if (!m) return;
+      var raw = decodeURIComponent(m[1]);
+      var data = JSON.parse(atob(raw));
+      if (data && data.id) {
+        authUser = data;
+        profile.name = data.name || profile.name;
+        saveAuth(); saveProfile();
+        if (data.name && longTerm.indexOf("Me llamo " + data.name) < 0) {
+          longTerm.push("Me llamo " + data.name);
+          store.set("longTerm", longTerm);
+        }
+        toast("Hola, " + (data.name || "usuario"));
+      }
+      // clean URL
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    } catch (e) { console.warn("auth callback", e); }
+  }
+  // Pre-known memory tags from AI or user
+  function ingestMemoryTags(text) {
+    var out = String(text || "");
+    // [[memoria:…]] or [[recall:…]]
+    out = out.replace(/\[\[\s*(?:memoria|memory|recall|know)\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      var note = v.trim().slice(0, 240);
+      if (note && longTerm.indexOf(note) < 0) {
+        longTerm.push(note);
+        store.set("longTerm", longTerm);
+        toast("Memoria: " + note.slice(0, 40));
+      }
+      return "";
+    });
+    // [[like:…]] preferences
+    out = out.replace(/\[\[\s*(?:like|gusto|pref)\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      var like = v.trim().slice(0, 80);
+      if (!profile.likes) profile.likes = [];
+      if (like && profile.likes.indexOf(like) < 0) {
+        profile.likes.push(like);
+        saveProfile();
+        var n = "Le gusta: " + like;
+        if (longTerm.indexOf(n) < 0) { longTerm.push(n); store.set("longTerm", longTerm); }
+      }
+      return "";
+    });
+    // [[name:…]]
+    out = out.replace(/\[\[\s*name\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      profile.name = v.trim().slice(0, 60);
+      saveProfile();
+      return "";
+    });
+    return out.replace(/\s{2,}/g, " ").trim();
+  }
+  function buildMemoryPayload() {
+    var bits = longTerm.slice(-50);
+    if (profile.name) bits.unshift("Nombre del usuario: " + profile.name);
+    if (authUser && authUser.provider) bits.unshift("Cuenta: " + authUser.provider + (authUser.email ? " (" + authUser.email + ")" : ""));
+    if (profile.likes && profile.likes.length) bits.push("Gustos: " + profile.likes.slice(-20).join(", "));
+    if (tasks && tasks.length) {
+      var open = tasks.filter(function (x) { return !x.done; }).slice(-10).map(function (x) { return x.text; });
+      if (open.length) bits.push("Tareas abiertas: " + open.join("; "));
+    }
+    bits.push("Avatar 3D activo. Expresiones con [[avatar:happy|sad|think|music|love|neutral|excited|angry|calm]].");
+    bits.push("Memoria nueva con [[memoria:hecho]] [[like:gusto]] [[name:nombre]].");
+    return bits;
   }
 
   function bind() {
@@ -1530,6 +1672,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("newChat", newChat);
     click("memoryBtn", function () { openModal("memoryModal"); });
     click("settingsBtn", function () { openModal("settingsModal"); });
+    click("authBtn", function () { refreshAuthUI(); openModal("authModal"); });
+    click("btnGoogle", function () { startOAuth("google"); });
+    click("btnGithub", function () { startOAuth("github"); });
+    click("btnLocalAuth", signInLocal);
+    click("btnSignOut", signOut);
     click("avatarBtn", toggleAvatarPanel);
     click("avatarClose", closeAvatarPanel);
     document.querySelectorAll(".avatar-controls [data-expr]").forEach(function (b) {
@@ -1627,6 +1774,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     window.speechSynthesis.onvoiceschanged = function () { populateVoiceSelect(); };
     try { listVoices(); } catch (e) {}
   }
+  consumeAuthCallback();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind); else bind();
 })();
 </script>
