@@ -74,7 +74,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .primary{padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;font-size:.88rem}
 .secondary{padding:9px 14px;border-radius:10px;border:1px solid var(--border2);background:#fafafa;font-size:.88rem}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#221d38;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60;font-size:.85rem;max-width:90vw}
-@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{display:none}.suggestions{grid-template-columns:1fr}.composer-wrap{padding:8px 10px calc(12px + env(safe-area-inset-bottom,0px))}}
+@media(max-width:720px){
+.app{grid-template-columns:1fr}
+.sidebar{display:none}
+.suggestions{grid-template-columns:1fr;gap:8px;padding:0 4px}
+.main{min-height:0}
+.topbar{padding:0 10px;height:48px}
+.chat{padding:10px 10px 8px;-webkit-overflow-scrolling:touch}
+.chat-inner{gap:14px;max-width:100%}
+.message{gap:8px}
+.avatar{width:32px;height:32px;font-size:.75rem;flex-shrink:0}
+.bubble{padding:10px 12px;font-size:.95rem;line-height:1.45;max-width:min(100%,calc(100vw - 56px));overflow-wrap:anywhere;word-break:break-word}
+.code-block{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.code-block pre{font-size:.78rem;padding:10px}
+.composer-wrap{padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.composer{padding:8px;border-radius:16px}
+.composer-row{gap:6px}
+.composer textarea{font-size:16px!important;min-height:44px;max-height:120px;padding:10px 12px}
+.tool,.send{width:44px;height:44px;flex-shrink:0}
+.composer-hint{font-size:.7rem;padding:4px 2px}
+.now-playing{right:8px;bottom:calc(78px + env(safe-area-inset-bottom,0px));width:min(260px,calc(100vw - 16px))}
+.music-player iframe{max-height:180px}
+.modal{width:calc(100vw - 24px);max-height:85dvh;overflow:auto;padding:16px}
+.welcome h1{font-size:1.25rem}
+}
 .tool.listening{background:#fee2e2;border-color:#f87171;animation:micpulse 1.2s ease-in-out infinite}@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}70%{box-shadow:0 0 0 8px transparent}}
 .music-player{margin-top:10px;border:1px solid var(--border2);border-radius:14px;overflow:hidden;background:#0f1117;color:#e8e8f0}
 .music-player .mp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#1a1d27;font-size:.8rem}
@@ -102,12 +125,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .now-playing .np-actions a,.now-playing .np-actions button{font-size:.7rem;padding:5px 8px;border-radius:8px;background:#2a2f3d;color:#e8e8f0;text-decoration:none;border:0}
 .bubble .stream-caret{display:inline-block;width:7px;height:1em;background:#7c6cf0;margin-left:2px;animation:blink .9s step-end infinite;vertical-align:text-bottom}
 @keyframes blink{50%{opacity:0}}
+
+.avatar-panel{display:none;position:fixed;right:12px;top:60px;z-index:45;width:min(280px,calc(100vw - 24px));background:var(--card,#fff);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.15);overflow:hidden}
+.avatar-panel.on{display:block;animation:npIn .2s ease}
+.avatar-stage{height:220px;background:radial-gradient(ellipse at 50% 70%,#2a2450 0%,#0f1117 70%);position:relative;overflow:hidden}
+.avatar-stage canvas{width:100%!important;height:100%!important;display:block}
+.avatar-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.avatar-face{font-size:72px;line-height:1;animation:avatarBob 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))}
+@keyframes avatarBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+.avatar-meta{padding:10px 12px;font-size:.8rem;color:var(--muted)}
+.avatar-meta strong{color:var(--text,#111);display:block;margin-bottom:4px}
+.avatar-controls{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}
+.avatar-controls button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#f4f4f8;font-size:.72rem;cursor:pointer}
+.avatar-controls button.on{background:#7c6cf0;color:#fff;border-color:#7c6cf0}
+@media(max-width:720px){
+.avatar-panel{left:12px;right:12px;width:auto;top:52px}
+.avatar-stage{height:180px}
+}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v35</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v37</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -155,6 +195,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="modal-backdrop" id="memoryModal"><div class="modal">
   <h2>Memoria</h2><p>Notas en este navegador.</p>
   <div id="ltList" style="margin-bottom:10px;font-size:.88rem"></div>
+  <h3 style="font-size:.9rem;margin:12px 0 6px">Tareas detectadas</h3>
+  <div id="taskList" style="margin-bottom:10px;font-size:.88rem"></div>
   <label>Nueva nota</label><input id="ltInput" placeholder="Prefiero respuestas cortas…" />
   <div class="modal-actions">
     <button type="button" class="secondary" data-close="memoryModal">Cerrar</button>
@@ -212,12 +254,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button type="button" id="npClose">Cerrar</button>
   </div>
 </div>
+<div class="avatar-panel" id="avatarPanel">
+  <div class="avatar-stage" id="avatarStage">
+    <div class="avatar-fallback" id="avatarFallback"><div class="avatar-face" id="avatarFace">🙂</div></div>
+  </div>
+  <div class="avatar-meta"><strong id="avatarName">Nova</strong><span id="avatarStatus">Lista · expresión neutral</span></div>
+  <div class="avatar-controls">
+    <button type="button" data-expr="neutral">Neutral</button>
+    <button type="button" data-expr="happy">Alegre</button>
+    <button type="button" data-expr="sad">Triste</button>
+    <button type="button" data-expr="think">Pensando</button>
+    <button type="button" data-expr="music">Música</button>
+    <button type="button" data-expr="love">Cariño</button>
+    <button type="button" id="avatarClose">Cerrar</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v35";
+  var VERSION = "v37";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -235,6 +292,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   var voiceName = store.get("voiceName", "") || "";
   var voiceRate = Number(store.get("voiceRate", 1)) || 1;
   var toneMood = store.get("toneMood", "neutral") || "neutral";
+  var tasks = store.get("tasks", []);
+  if (!Array.isArray(tasks)) tasks = [];
+  function saveTasks() { store.set("tasks", tasks); }
+  function addTask(text) {
+    text = String(text || "").trim().slice(0, 200);
+    if (!text) return;
+    if (tasks.some(function (x) { return x.text === text; })) return;
+    tasks.push({ id: "t" + Date.now(), text: text, done: false, created: Date.now() });
+    saveTasks();
+  }
+  function mapsUrl(place) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+  }
+  function wantsMaps(text) {
+    return /\b(mapa|maps|ruta|direcci[oó]n|c[oó]mo\s+llegar|navega(r|ci[oó]n)|ubicaci[oó]n|d[oó]nde\s+queda|cerca\s+de)\b/i.test(text);
+  }
+  function extractPlace(text) {
+    var m = String(text || "").match(/(?:mapa|maps|ruta|direcci[oó]n|llegar|navega(?:r|ci[oó]n)?|ubicaci[oó]n|queda|cerca)\s+(?:de\s+|a\s+|en\s+)?(.+)/i);
+    return m ? m[1].replace(/[?.!]+$/, "").trim() : "";
+  }
+  function extractTasksFromText(text) {
+    var found = [];
+    var lines = String(text || "").split(/\n/);
+    lines.forEach(function (ln) {
+      var m = ln.match(/^\s*(?:[-*]|\d+[.)])\s*(?:\[ ?\]|TODO:?|pendiente:?|tarea:?)\s*(.+)/i)
+        || ln.match(/\b(?:recu[eé]dame|no\s+olvides|tienes\s+que|debes|pendiente(?:\s+de)?)\s+(.+)/i);
+      if (m) found.push(m[1].replace(/[?.!]+$/, "").trim());
+    });
+    return found;
+  }
+
   var pendingImage = null; // {mimeType,data,preview,name}
   var apiUrl = store.get("apiUrl", "");
   if (typeof apiUrl !== "string" || !apiUrl || /tu-servicio/i.test(apiUrl)) apiUrl = DEFAULT_API;
@@ -418,6 +506,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     out = out.replace(/\[\[\s*music\s*:\s*[^\]]+\]\]/gi, "");
     out = out.replace(/\[\s*music\s*:\s*[^\]]+\]/gi, "");
 
+    out = stripAvatarTags(out);
     return out.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   }
   function speechClean(text) {
@@ -444,8 +533,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var u = new SpeechSynthesisUtterance(clean.slice(0, 900));
       u.lang = "es-ES";
       var tp = toneParams(toneMood || "neutral");
-      u.rate = (tp && tp.rate) || 1;
-      u.pitch = (tp && tp.pitch) || 1;
+      u.rate = Math.max(0.85, Math.min(1.15, (tp && tp.rate) || 1));
+      u.pitch = Math.max(0.9, Math.min(1.15, (tp && tp.pitch) || 1));
       var v = pickVoice();
       if (v) { u.voice = v; if (v.lang) u.lang = v.lang; }
       window.speechSynthesis.speak(u);
@@ -454,9 +543,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 
   function wantsMusic(text) {
-    return /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b.{0,40}\b(musica|música|cancion|canción|tema|song|track|playlist)\b/i.test(text)
-      || /\b(musica|música|cancion|canción)\b.{0,24}\b(de|of)\b/i.test(text)
-      || /^\/(music|musica|song)\b/i.test(text);
+    // Only explicit user requests — never soft mentions
+    var s = String(text || "");
+    if (/\[\[\s*music\s*:/i.test(s) || /\/(?:music|musica|song)\b/i.test(s)) return true;
+    return /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b.{0,48}\b(musica|música|cancion|canción|tema|song|track|playlist)\b/i.test(s)
+      || /\b(pon|poner|ponme|reproduce|play)\s+(?:la\s+|el\s+)?(?:cancion|canción|tema)\b/i.test(s);
   }
   function extractMusicQuery(text) {
     var s = String(text || "");
@@ -627,14 +718,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         return tryPiped(0);
       });
   }
-  function buildMusicPlayer(query) {
-    unlockAudio();
+  function buildMusicPlayer(query, autoLaunch) {
+    autoLaunch = !!autoLaunch;
     var wrap = document.createElement("div");
     wrap.className = "music-player";
     var head = document.createElement("div");
     head.className = "mp-head";
     var titleEl = document.createElement("span");
-    titleEl.textContent = "🎵 " + query + " — abriendo app…";
+    titleEl.textContent = "🎵 " + query;
     var stopBtn = document.createElement("button");
     stopBtn.type = "button";
     stopBtn.textContent = "Cerrar";
@@ -647,39 +738,36 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     body.style.cssText = "padding:12px;display:flex;flex-direction:column;gap:10px";
     var status = document.createElement("div");
     status.style.cssText = "font-size:.85rem;color:#c8c8d0";
-    status.textContent = "Resolviendo pista para abrir Spotify / YouTube…";
+    status.textContent = autoLaunch ? "Abriendo app…" : "Listo — toca ▶ para reproducir (no se abre solo).";
     body.appendChild(status);
     wrap.appendChild(body);
 
     resolveMusic(query).then(function (info) {
       titleEl.textContent = "🎵 " + (info.title || query) + (info.artist ? " — " + info.artist : "");
-      var opened = [];
 
-      // Prefer Spotify app play when we have a track URI
-      if (info.spotifyUri || (info.spotifyUrl && /\/track\//.test(info.spotifyUrl))) {
-        openSpotifyPlay(info.spotifyUri, info.spotifyUrl);
-        opened.push("Spotify");
+      function launchSpotify() {
+        openSpotifyPlay(info.spotifyUri, info.spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query)));
+      }
+      function launchYt() {
+        if (info.youtubeId) openYouTubePlay(info.youtubeId);
+        else window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), "_blank");
       }
 
-      // YouTube app play of the specific video
-      if (info.youtubeId) {
-        // slight delay so Spotify app handoff doesn't cancel both
-        setTimeout(function () {
-          openYouTubePlay(info.youtubeId);
-        }, opened.length ? 600 : 0);
-        opened.push("YouTube");
-      }
-
-      // iOS Apple Music direct track
-      if (isIOS() && info.appleUrl) {
-        setTimeout(function () { openAppleMusic(info.appleUrl); }, 900);
-        opened.push("Apple Music");
-      }
-
-      if (opened.length) {
-        status.textContent = "Abierto: " + opened.join(" + ") + ". Si no saltó la app, usa los botones.";
+      // ONLY auto-open when this turn the user asked for music
+      if (autoLaunch) {
+        unlockAudio();
+        if (info.spotifyUri || (info.spotifyUrl && /\/track\//.test(String(info.spotifyUrl)))) {
+          launchSpotify();
+          status.textContent = "Spotify…";
+        } else if (info.youtubeId) {
+          launchYt();
+          status.textContent = "YouTube…";
+        } else {
+          launchSpotify();
+          status.textContent = "Spotify search…";
+        }
       } else {
-        status.textContent = "No encontré ID de pista. Usa los botones.";
+        status.textContent = "Toca un botón para reproducir.";
       }
 
       var actions = document.createElement("div");
@@ -689,30 +777,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         b.type = "button";
         b.textContent = label;
         b.style.cssText = "padding:10px 14px;border-radius:10px;font-size:.85rem;border:0;color:#fff;background:" + color + ";cursor:pointer";
-        b.onclick = fn;
+        b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); unlockAudio(); fn(); };
         return b;
       }
-      actions.appendChild(btn("▶ Spotify", "#1DB954", function () {
-        openSpotifyPlay(info.spotifyUri, info.spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query)));
-      }));
-      actions.appendChild(btn("▶ YouTube", "#c00", function () {
-        if (info.youtubeId) openYouTubePlay(info.youtubeId);
-        else window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), "_blank");
-      }));
+      actions.appendChild(btn("▶ Spotify", "#1DB954", launchSpotify));
+      actions.appendChild(btn("▶ YouTube", "#c00", launchYt));
       if (info.appleUrl) {
         actions.appendChild(btn("▶ Apple Music", "#fc3c44", function () { openAppleMusic(info.appleUrl); }));
       }
       body.appendChild(actions);
 
-      showNowPlaying(
-        info.title || query,
-        info.spotifyUrl,
-        info.youtubeId ? ("https://www.youtube.com/watch?v=" + info.youtubeId) : "",
-        info.art,
-        info.artist
-      );
+      // now-playing card only when user launches, not on history restore
+      if (autoLaunch) {
+        showNowPlaying(info.title || query, info.spotifyUrl, info.youtubeId ? ("https://www.youtube.com/watch?v=" + info.youtubeId) : "", info.art, info.artist);
+      }
     }).catch(function () {
-      status.textContent = "No se pudo resolver. Prueba de nuevo.";
+      status.textContent = "No se pudo resolver. Usa los botones.";
     });
 
     return wrap;
@@ -727,16 +807,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     np.classList.add("on");
     el("npTitle").textContent = query || "Música";
     el("npArtist").textContent = artist || "App";
-    el("npLyrics").textContent = "Reproducción en Spotify / YouTube app.";
+    el("npLyrics").textContent = "Reproducción en app (solo si lo pediste).";
     if (artUrl) el("npArt").src = artUrl;
     else el("npArt").removeAttribute("src");
     var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || "#";
     var yt = el("npYoutube"); if (yt) yt.href = ytUrl || "#";
   }
-  function attachMusicToBubble(body, query) {
+  function attachMusicToBubble(body, query, autoLaunch) {
     if (!query || !body) return;
     body.querySelectorAll(".music-player").forEach(function (n) { n.remove(); });
-    body.appendChild(buildMusicPlayer(query));
+    body.appendChild(buildMusicPlayer(query, !!autoLaunch));
   }
 
   function setAvatarMusicMode(on) {
@@ -751,7 +831,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     }
   }
 
-  function appendMessage(role, text, scroll, imgUrl, musicQuery) {
+  function appendMessage(role, text, scroll, imgUrl, musicQuery, autoMusic) {
     var root = el("chatInner"); if (!root) return;
     var w = root.querySelector(".welcome"); if (w) w.remove();
     var wrap = document.createElement("div"); wrap.className = "message " + (role === "user" ? "user" : "assistant");
@@ -760,7 +840,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (role === "assistant") {
       fillRich(body, text);
       if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
-      if (musicQuery) attachMusicToBubble(body, musicQuery);
+      if (musicQuery) attachMusicToBubble(body, musicQuery, !!autoMusic);
       var tools = document.createElement("div"); tools.className = "msg-tools";
       var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
       var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
@@ -778,7 +858,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!c || !c.messages.length) {
       root.innerHTML = "<div class=\"welcome\"><div class=\"orb\"></div><h1>Que quieres explorar hoy?</h1><p>Nova " + VERSION + " — chat estable.</p><div class=\"suggestions\"><button type=\"button\" data-prompt=\"Hola Nova\">Hola</button><button type=\"button\" data-prompt=\"Que puedes hacer?\">Capacidades</button><button type=\"button\" data-prompt=\"Explica algo de programacion\">Codigo</button><button type=\"button\" data-prompt=\"Recuerda que prefiero respuestas claras\">Memoria</button></div></div>";
       root.querySelectorAll("[data-prompt]").forEach(function (b) { b.onclick = function () { send(b.getAttribute("data-prompt")); }; });
-    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview, m.musicQuery); }); }
+    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview, m.musicQuery, false); }); }
     var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight; renderHistory();
   }
   var sending = false;
@@ -846,7 +926,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     // Music intercept — play even if backend is slow
     var userMusicQ = extractMusicQuery(text);
     if (!userMusicQ && wantsMusic(text)) {
-      userMusicQ = text.replace(/^\/(?:music|musica|song)\s*/i, "").trim() || "musica relajante";
+      userMusicQ = text.replace(/^\/(?:music|musica|song)\s*/i, "").trim();
+      if (!userMusicQ) userMusicQ = extractMusicQuery(text) || "";
     }
     if (userMusicQ || wantsMusic(text)) { try { unlockAudio(); } catch (e) {} }
 
@@ -943,13 +1024,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var rawAnswer = String(data.reply || "Sin respuesta");
       var musicQ = extractMusicQuery(rawAnswer);
       var answer = stripMusicTags(stripVoiceDirectives(rawAnswer));
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
       var outImg = data.imageUrl || null;
       c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined, musicQuery: musicQ || undefined });
       saveChats();
       if (wait.parentNode) wait.remove();
-      var finalMusic = musicQ || (typeof userMusicQ !== "undefined" ? userMusicQ : "");
-      appendMessage("assistant", answer, true, outImg, finalMusic || null);
-      if (finalMusic) setAvatarMusicMode(true);
+      var userAskedMusic = !!(typeof userMusicQ !== "undefined" && userMusicQ) || wantsMusic(text);
+      var finalMusic = userAskedMusic ? (musicQ || userMusicQ || "") : "";
+      // ignore AI [[music:]] tags unless the user asked to play something
+      appendMessage("assistant", answer, true, outImg, finalMusic || null, userAskedMusic);
+      if (finalMusic && userAskedMusic) { setAvatarMusicMode(true); try { setAvatarExpression("music"); openAvatarPanel(); } catch (e) {} }
+      // Auto tasks from assistant/user text
+      try {
+        extractTasksFromText(text).forEach(addTask);
+        extractTasksFromText(answer).forEach(addTask);
+      } catch (e) {}
+      // Maps card when user asked for place/route
+      if (wantsMaps(text)) {
+        var place = extractPlace(text) || text;
+        var mapLink = mapsUrl(place);
+        answer = answer + "\n\n🗺️ Mapa: " + mapLink;
+        // re-append link into last bubble if needed — soft: speak unchanged
+        var lastBub = document.querySelector(".message.assistant:last-child .bubble");
+        if (lastBub && !/google\.com\/maps/.test(lastBub.textContent || "")) {
+          var a = document.createElement("a");
+          a.href = mapLink; a.target = "_blank"; a.rel = "noopener"; a.textContent = "🗺️ Abrir en Google Maps";
+          a.style.cssText = "display:inline-block;margin-top:8px;color:#4f46e5";
+          lastBub.appendChild(document.createElement("br"));
+          lastBub.appendChild(a);
+        }
+      }
+      try { setAvatarExpression(exprFromTone(toneMood)); } catch (e) {}
       if (autoSpeak) speakText(answer);
     } catch (err) {
       if (wait.parentNode) wait.remove();
@@ -967,9 +1072,28 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     }
   }
 
-  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") renderLt(); if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; var tm = el("toneMood"); if (tm) tm.value = toneMood || "neutral"; var vt = el("voiceType"); if (vt) vt.value = voiceType || "auto"; populateVoiceSelect(); var vn = el("voiceName"); if (vn) vn.value = voiceName || ""; } }
+  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") { renderLt(); try { renderTasks(); } catch (e) {} } if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; var tm = el("toneMood"); if (tm) tm.value = toneMood || "neutral"; var vt = el("voiceType"); if (vt) vt.value = voiceType || "auto"; populateVoiceSelect(); var vn = el("voiceName"); if (vn) vn.value = voiceName || ""; } }
   function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
-  function renderLt() { var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
+  function renderTasks() {
+    var list = el("taskList"); if (!list) return;
+    list.innerHTML = "";
+    if (!tasks.length) { list.textContent = "Sin tareas."; list.style.color = "var(--muted)"; return; }
+    list.style.color = "";
+    tasks.slice().reverse().forEach(function (task, idx) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)";
+      var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!task.done;
+      cb.onchange = function () { task.done = cb.checked; saveTasks(); };
+      var s = document.createElement("span"); s.textContent = task.text; s.style.flex = "1";
+      if (task.done) s.style.textDecoration = "line-through";
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "X";
+      b.onclick = function () { tasks = tasks.filter(function (x) { return x.id !== task.id; }); saveTasks(); renderTasks(); };
+      row.appendChild(cb); row.appendChild(s); row.appendChild(b); list.appendChild(row);
+    });
+  }
+  function renderLt() {
+    try { renderTasks(); } catch (e) {}
+ var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
   function dictationOnce() { var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast("Dictado no disponible"); return; } var rec = new SR(); rec.lang = "es-ES"; rec.interimResults = false; var btn = el("btnMic"); if (btn) btn.classList.add("on"); rec.onresult = function (ev) { var p = el("prompt"); if (p) p.value = ev.results[0][0].transcript; toast("Listo — toca enviar"); }; rec.onerror = function () { toast("Mic error"); }; rec.onend = function () { if (btn) btn.classList.remove("on"); }; try { rec.start(); } catch (e) { toast("No se pudo usar el mic"); if (btn) btn.classList.remove("on"); } }
 
   // ——— Parlante / Hey Nova (uses default mic + speaker; Bluetooth if OS-routed) ———
@@ -1121,6 +1245,231 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     });
   }
 
+
+  // ——— 3D / expressive avatar ———
+  var avatarExpr = store.get("avatarExpr", "neutral") || "neutral";
+  var avatarVisible = false;
+  var avatarRaf = 0;
+  var avatarThree = null; // {renderer,scene,camera,head,body,leftEye,rightEye,mouth,t}
+
+  var EXPR_FACE = {
+    neutral: "🙂",
+    happy: "😄",
+    sad: "😢",
+    think: "🤔",
+    music: "🎧",
+    love: "🥰",
+    excited: "🤩",
+    angry: "😠",
+    calm: "😌"
+  };
+  function exprFromTone(mood) {
+    var map = { happy: "happy", excited: "excited", sad: "sad", angry: "angry", calm: "calm", playful: "happy", serious: "think", neutral: "neutral" };
+    return map[mood] || "neutral";
+  }
+  function setAvatarExpression(expr) {
+    expr = String(expr || "neutral").toLowerCase();
+    if (/alegre|feliz|happy|joy/.test(expr)) expr = "happy";
+    else if (/triste|sad/.test(expr)) expr = "sad";
+    else if (/pens|think/.test(expr)) expr = "think";
+    else if (/music|musica|música|dj/.test(expr)) expr = "music";
+    else if (/amor|love|cariño|carino/.test(expr)) expr = "love";
+    else if (/emocion|excited|hype/.test(expr)) expr = "excited";
+    else if (/enoj|angry/.test(expr)) expr = "angry";
+    else if (/suave|calm/.test(expr)) expr = "calm";
+    else if (/neutral|normal/.test(expr)) expr = "neutral";
+    else if (!EXPR_FACE[expr]) expr = "neutral";
+    avatarExpr = expr;
+    store.set("avatarExpr", expr);
+    var face = el("avatarFace");
+    if (face) face.textContent = EXPR_FACE[expr] || "🙂";
+    var st = el("avatarStatus");
+    if (st) st.textContent = "Expresión: " + expr;
+    document.querySelectorAll(".avatar-controls [data-expr]").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-expr") === expr);
+    });
+    applyAvatarMeshExpr(expr);
+  }
+  function applyAvatarMeshExpr(expr) {
+    if (!avatarThree) return;
+    var mouth = avatarThree.mouth;
+    var head = avatarThree.head;
+    if (!mouth || !head) return;
+    // simple morph via scale
+    if (expr === "happy" || expr === "love" || expr === "excited") {
+      mouth.scale.set(1.2, 0.55, 1);
+      mouth.position.y = -0.22;
+      head.material.color.setHex(0xf5c6a5);
+    } else if (expr === "sad") {
+      mouth.scale.set(0.9, 0.35, 1);
+      mouth.position.y = -0.28;
+      head.material.color.setHex(0xe8b89a);
+    } else if (expr === "think") {
+      mouth.scale.set(0.5, 0.35, 1);
+      mouth.position.y = -0.24;
+    } else if (expr === "music") {
+      mouth.scale.set(1.1, 0.5, 1);
+      mouth.position.y = -0.22;
+      head.material.color.setHex(0xf0c8ff);
+    } else {
+      mouth.scale.set(1, 0.4, 1);
+      mouth.position.y = -0.25;
+      head.material.color.setHex(0xf1c27d);
+    }
+  }
+  function loadThree(cb) {
+    if (window.THREE) { cb(); return; }
+    var s = document.createElement("script");
+    s.src = "https://unpkg.com/three@0.160.0/build/three.min.js";
+    s.onload = function () { cb(); };
+    s.onerror = function () { cb(new Error("three")); };
+    document.head.appendChild(s);
+  }
+  function initAvatar3D() {
+    var stage = el("avatarStage");
+    if (!stage || !window.THREE) return false;
+    var fb = el("avatarFallback");
+    try {
+      var w = stage.clientWidth || 280;
+      var h = stage.clientHeight || 220;
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+      camera.position.set(0, 0.2, 2.4);
+      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      stage.appendChild(renderer.domElement);
+      if (fb) fb.style.display = "none";
+
+      var light = new THREE.DirectionalLight(0xffffff, 1.1);
+      light.position.set(2, 3, 4);
+      scene.add(light);
+      scene.add(new THREE.AmbientLight(0x8866ff, 0.45));
+
+      // body
+      var bodyMat = new THREE.MeshStandardMaterial({ color: 0x7c6cf0, roughness: 0.4, metalness: 0.1 });
+      var body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.55, 4, 12), bodyMat);
+      body.position.y = -0.55;
+      scene.add(body);
+
+      // head
+      var headMat = new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.55 });
+      var head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 32, 32), headMat);
+      head.position.y = 0.35;
+      scene.add(head);
+
+      // eyes
+      var eyeMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
+      var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), eyeMat);
+      leftEye.position.set(-0.12, 0.42, 0.32);
+      var rightEye = leftEye.clone();
+      rightEye.position.x = 0.12;
+      scene.add(leftEye);
+      scene.add(rightEye);
+
+      // mouth
+      var mouth = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 12, 12),
+        new THREE.MeshStandardMaterial({ color: 0xc45c6a })
+      );
+      mouth.scale.set(1, 0.4, 0.6);
+      mouth.position.set(0, -0.25 + 0.35, 0.32);
+      scene.add(mouth);
+
+      // headphones ring for music mode later
+      var hp = new THREE.Mesh(
+        new THREE.TorusGeometry(0.42, 0.04, 8, 24),
+        new THREE.MeshStandardMaterial({ color: 0x333355 })
+      );
+      hp.rotation.x = Math.PI / 2;
+      hp.position.y = 0.35;
+      hp.visible = false;
+      scene.add(hp);
+
+      avatarThree = {
+        renderer: renderer, scene: scene, camera: camera,
+        head: head, body: body, leftEye: leftEye, rightEye: rightEye,
+        mouth: mouth, hp: hp, t: 0
+      };
+      applyAvatarMeshExpr(avatarExpr);
+
+      function tick() {
+        if (!avatarVisible || !avatarThree) return;
+        avatarThree.t += 0.016;
+        var tme = avatarThree.t;
+        head.position.y = 0.35 + Math.sin(tme * 2) * 0.03;
+        body.rotation.y = Math.sin(tme * 0.8) * 0.12;
+        head.rotation.y = Math.sin(tme * 0.9) * 0.15;
+        head.rotation.z = Math.sin(tme * 1.2) * 0.04;
+        leftEye.scale.y = 0.85 + Math.sin(tme * 0.5) * 0.1;
+        rightEye.scale.y = leftEye.scale.y;
+        hp.visible = avatarExpr === "music";
+        renderer.render(scene, camera);
+        avatarRaf = requestAnimationFrame(tick);
+      }
+      cancelAnimationFrame(avatarRaf);
+      tick();
+      return true;
+    } catch (e) {
+      console.warn("avatar3d", e);
+      if (fb) fb.style.display = "flex";
+      return false;
+    }
+  }
+  function openAvatarPanel() {
+    var p = el("avatarPanel");
+    if (!p) return;
+    p.classList.add("on");
+    avatarVisible = true;
+    setAvatarExpression(avatarExpr || exprFromTone(toneMood));
+    loadThree(function (err) {
+      if (err || !window.THREE) {
+        var fb = el("avatarFallback");
+        if (fb) fb.style.display = "flex";
+        return;
+      }
+      if (!avatarThree) initAvatar3D();
+      else {
+        cancelAnimationFrame(avatarRaf);
+        (function tick() {
+          if (!avatarVisible || !avatarThree) return;
+          avatarThree.t += 0.016;
+          var tme = avatarThree.t;
+          avatarThree.head.position.y = 0.35 + Math.sin(tme * 2) * 0.03;
+          avatarThree.body.rotation.y = Math.sin(tme * 0.8) * 0.12;
+          avatarThree.head.rotation.y = Math.sin(tme * 0.9) * 0.15;
+          avatarThree.hp.visible = avatarExpr === "music";
+          avatarThree.renderer.render(avatarThree.scene, avatarThree.camera);
+          avatarRaf = requestAnimationFrame(tick);
+        })();
+      }
+    });
+  }
+  function closeAvatarPanel() {
+    avatarVisible = false;
+    cancelAnimationFrame(avatarRaf);
+    var p = el("avatarPanel");
+    if (p) p.classList.remove("on");
+  }
+  function toggleAvatarPanel() {
+    var p = el("avatarPanel");
+    if (p && p.classList.contains("on")) closeAvatarPanel();
+    else openAvatarPanel();
+  }
+  // Parse [[avatar:happy]] from AI text
+  function stripAvatarTags(text) {
+    var out = String(text || "");
+    out = out.replace(/\[\[\s*avatar\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      setAvatarExpression(v.trim());
+      return "";
+    });
+    out = out.replace(/\[\s*avatar\s*:\s*([^\]]+)\]/gi, function (_, v) {
+      setAvatarExpression(v.trim());
+      return "";
+    });
+    return out;
+  }
+
   function bind() {
     var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
     var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
@@ -1130,6 +1479,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("newChat", newChat);
     click("memoryBtn", function () { openModal("memoryModal"); });
     click("settingsBtn", function () { openModal("settingsModal"); });
+    click("avatarBtn", toggleAvatarPanel);
+    click("avatarClose", closeAvatarPanel);
+    document.querySelectorAll(".avatar-controls [data-expr]").forEach(function (b) {
+      b.onclick = function () { setAvatarExpression(b.getAttribute("data-expr")); };
+    });
     click("mobileSettings", function () { openModal("settingsModal"); });
     click("btnMic", dictationOnce);
     click("npClose", hideNowPlaying);
