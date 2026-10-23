@@ -56,6 +56,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .html-preview iframe{width:100%;height:260px;border:0;background:#fff}
 .composer-wrap{flex:0 0 auto;padding:8px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:5}
 .composer{max-width:720px;margin:0 auto;background:var(--panel);border:1px solid var(--border2);border-radius:24px;padding:10px 12px;box-shadow:var(--shadow)}
+.composer-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .composer-row{display:flex;gap:8px;align-items:flex-end}
 .composer textarea{flex:1;border:0;outline:none;resize:none;background:transparent;min-height:24px;max-height:140px;line-height:1.45;font-size:16px;padding:6px 0}
 .tool{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;background:#fafafa;flex-shrink:0}
@@ -183,12 +184,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .call-orb.speaking{box-shadow:0 0 28px rgba(52,211,153,.55)}
 .call-status{position:absolute;top:48px;left:10px;right:10px;text-align:center;font-size:.8rem;color:#eee;z-index:3;text-shadow:0 1px 4px #000}
 .live-exit-fab{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:50%;border:0;background:#e11d48;color:#fff;font-size:1.1rem;display:grid;place-items:center}
+.mobile-only{display:none}
+@media(max-width:720px){.mobile-only{display:grid}}
+
+@media(max-width:720px){
+  .sidebar.drawer-open{
+    display:flex!important;
+    position:fixed;
+    inset:0 auto 0 0;
+    width:min(280px,86vw);
+    z-index:70;
+    background:var(--sidebar,#fff);
+    box-shadow:8px 0 32px rgba(0,0,0,.2);
+  }
+  .sidebar.drawer-open::after{content:"";position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:-1}
+}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v41</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v43</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -200,6 +216,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 </aside>
 <main class="main">
   <header class="topbar">
+    <button type="button" class="iconbtn mobile-only" id="menuBtn" title="Menú" aria-label="Menú">☰</button>
     <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
     <div class="top-actions">
       <button type="button" class="iconbtn" id="authBtn" title="Cuenta">👤</button>
@@ -220,8 +237,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <div class="composer-wrap">
     <form class="composer" id="composer">
       <div class="attach-bar" id="attachBar"><img id="attachPrev" alt=""/><span id="attachName">imagen</span><button type="button" class="secondary" id="btnClearImg" style="padding:4px 8px;font-size:.75rem">Quitar</button></div>
-      <div class="composer-row">
-        <textarea id="prompt" rows="1" placeholder="Escribe a Nova…"></textarea>
+      <div class="composer-tools" id="composerTools">
         <input type="file" id="fileImg" accept="image/*" hidden />
         <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
         <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
@@ -230,7 +246,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="tool" id="btnCall" title="Llamada">📞</button>
         <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
         <button type="button" class="tool" id="btnParlant" title="Parlante Hey Nova">🔊</button>
-        <button type="button" class="send" id="send">↑</button>
+      </div>
+      <div class="composer-row">
+        <textarea id="prompt" rows="1" placeholder="Escribe a Nova…" enterkeyhint="send" autocomplete="off"></textarea>
+        <button type="button" class="send" id="send" title="Enviar">↑</button>
       </div>
     </form>
     <div class="composer-hint">v29 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
@@ -358,7 +377,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v41";
+  var VERSION = "v43";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -610,21 +629,76 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     s = s.replace(/[*_#>`~\[\]]/g, " ");
     return s.replace(/\s+/g, " ").trim();
   }
-  function speakText(text) {
+  var ttsSpeaking = false;
+  var micRec = null; // shared one-shot dictation
+  function stopAllMic() {
+    try { if (micRec) { micRec.onend = null; micRec.onerror = null; micRec.stop(); } } catch (e) {}
+    micRec = null;
+    try { if (typeof stopLiveRec === "function") stopLiveRec(); } catch (e2) {}
+    try { if (typeof stopParlantRec === "function") stopParlantRec(); } catch (e3) {}
+    var btn = el("btnMic");
+    if (btn) btn.classList.remove("on");
+  }
+  function whenSpeechEnds(cb) {
+    var n = 0;
+    var id = setInterval(function () {
+      n++;
+      var speaking = false;
+      try { speaking = !!(window.speechSynthesis && window.speechSynthesis.speaking); } catch (e) {}
+      if ((!speaking && !ttsSpeaking) || n > 100) {
+        clearInterval(id);
+        ttsSpeaking = false;
+        if (cb) cb();
+      }
+    }, 200);
+  }
+  function speakText(text, onEnd) {
     try {
-      if (!window.speechSynthesis) return;
+      if (!window.speechSynthesis) {
+        if (onEnd) onEnd();
+        return;
+      }
       var clean = speechClean(text);
-      if (!clean) return;
-      window.speechSynthesis.cancel();
+      if (!clean) {
+        if (onEnd) onEnd();
+        return;
+      }
+      // stop mics while AI talks — otherwise next user speech is ignored
+      stopAllMic();
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      ttsSpeaking = true;
       var u = new SpeechSynthesisUtterance(clean.slice(0, 900));
       u.lang = "es-ES";
       var tp = toneParams(toneMood || "neutral");
       u.rate = Math.max(0.85, Math.min(1.15, (tp && tp.rate) || 1));
       u.pitch = Math.max(0.9, Math.min(1.15, (tp && tp.pitch) || 1));
       var v = pickVoice();
-      if (v) { u.voice = v; if (v.lang) u.lang = v.lang; }
+      if (v) {
+        try { u.voice = v; if (v.lang) u.lang = v.lang; } catch (e2) {}
+      }
+      var done = function () {
+        ttsSpeaking = false;
+        if (onEnd) {
+          try { onEnd(); } catch (e3) {}
+        }
+      };
+      u.onend = done;
+      u.onerror = done;
+      try { window.speechSynthesis.resume(); } catch (e4) {}
       window.speechSynthesis.speak(u);
-    } catch (err) { console.warn("speak", err); }
+      // safety if onend never fires (some mobile browsers)
+      setTimeout(function () {
+        if (ttsSpeaking) {
+          var still = false;
+          try { still = window.speechSynthesis.speaking; } catch (e5) {}
+          if (!still) done();
+        }
+      }, Math.min(20000, 1200 + clean.length * 50));
+    } catch (err) {
+      console.warn("speak", err);
+      ttsSpeaking = false;
+      if (onEnd) onEnd();
+    }
   }
 
 
@@ -1187,7 +1261,56 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   function renderLt() {
     try { renderTasks(); } catch (e) {}
  var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
-  function dictationOnce() { var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast("Dictado no disponible"); return; } var rec = new SR(); rec.lang = "es-ES"; rec.interimResults = false; var btn = el("btnMic"); if (btn) btn.classList.add("on"); rec.onresult = function (ev) { var p = el("prompt"); if (p) p.value = ev.results[0][0].transcript; toast("Listo — toca enviar"); }; rec.onerror = function () { toast("Mic error"); }; rec.onend = function () { if (btn) btn.classList.remove("on"); }; try { rec.start(); } catch (e) { toast("No se pudo usar el mic"); if (btn) btn.classList.remove("on"); } }
+  function dictationOnce() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Dictado no disponible"); return; }
+    if (ttsSpeaking || (window.speechSynthesis && window.speechSynthesis.speaking)) {
+      toast("Espera a que Nova termine de hablar");
+      return;
+    }
+    stopAllMic();
+    var btn = el("btnMic");
+    try {
+      var rec = new SR();
+      micRec = rec;
+      rec.lang = "es-ES";
+      rec.interimResults = true;
+      rec.continuous = false;
+      if (btn) btn.classList.add("on");
+      toast("Habla ahora…");
+      var finalText = "";
+      rec.onresult = function (ev) {
+        var said = "";
+        for (var i = 0; i < ev.results.length; i++) {
+          said += ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) finalText = said;
+        }
+        var p = el("prompt");
+        if (p) p.value = (finalText || said).trim();
+      };
+      rec.onerror = function (ev) {
+        console.warn("mic", ev);
+        if (btn) btn.classList.remove("on");
+        micRec = null;
+        var err = (ev && ev.error) || "";
+        if (err === "not-allowed") toast("Permiso de mic denegado");
+        else if (err === "no-speech") toast("No se oyó nada — prueba de nuevo");
+        else toast("Mic: " + err);
+      };
+      rec.onend = function () {
+        if (btn) btn.classList.remove("on");
+        micRec = null;
+        var p = el("prompt");
+        if (p && p.value.trim()) toast("Listo — toca enviar");
+      };
+      rec.start();
+    } catch (e) {
+      toast("No se pudo usar el mic");
+      if (btn) btn.classList.remove("on");
+      micRec = null;
+    }
+  }
+
 
   // ——— Parlante / Hey Nova (uses default mic + speaker; Bluetooth if OS-routed) ———
   var parlantOn = false;
@@ -1853,9 +1976,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         c.updated = Date.now();
         saveChats();
       }
-      speakText(answer);
       setOrbState("speaking");
-      setTimeout(function () { setOrbState(liveMicOn ? "listening" : ""); }, 2000);
+      speakText(answer, function () {
+        setOrbState(liveMicOn ? "listening" : "");
+        if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 300);
+      });
     } catch (e) {
       setLiveCaption("Error: " + (e.message || e));
       toast("Error de visión");
@@ -1868,7 +1993,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     liveRec = null;
   }
   function startLiveListen() {
-    if (!liveMicOn || liveMode !== "call" || liveBusy) return;
+    if (!liveMicOn || liveMode !== "call" || liveBusy || ttsSpeaking) return;
+    if (window.speechSynthesis && window.speechSynthesis.speaking) return;
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setCallStatus("Dictado no disponible en este navegador"); return; }
     stopLiveRec();
@@ -1943,13 +2069,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         saveChats();
       }
       setOrbState("speaking");
-      speakText(answer);
-      // resume listen after speech roughly
-      setTimeout(function () {
+      speakText(answer, function () {
         liveBusy = false;
         setOrbState(liveMicOn ? "listening" : "");
-        if (liveMode === "call" && liveMicOn) startLiveListen();
-      }, Math.min(8000, 800 + String(answer).length * 40));
+        if (liveMode === "call" && liveMicOn) {
+          setTimeout(function () { startLiveListen(); }, 350);
+        }
+      });
     } catch (e) {
       liveBusy = false;
       setCallStatus("Error: " + (e.message || e));
@@ -2042,6 +2168,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   }
 
   function bind() {
+    click("menuBtn", function () {
+      var sb = document.querySelector(".sidebar");
+      if (!sb) return;
+      if (sb.classList.contains("drawer-open")) {
+        sb.classList.remove("drawer-open");
+      } else {
+        sb.classList.add("drawer-open");
+      }
+    });
+
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && liveMode) { e.preventDefault(); closeLive(); }
     });
