@@ -165,12 +165,30 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .live-controls button{width:52px;height:52px}
 .live-controls button.hang{width:60px;height:60px}
 }
+
+/* v41 live compact */
+.live-overlay{display:none;position:fixed;inset:0;z-index:90;background:#0a0a0c;color:#fff;flex-direction:column}
+.live-overlay.on{display:flex}
+.live-video-wrap{flex:1 1 auto;min-height:0;position:relative;background:#000}
+.live-video-wrap video#liveVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1!important;display:block!important}
+.live-caption{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.72);font-size:.84rem;line-height:1.35;max-height:32%;overflow:auto}
+.live-top{position:absolute;top:0;left:0;right:0;z-index:4;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent)}
+.live-controls{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:12px;padding:12px 10px calc(12px + env(safe-area-inset-bottom,0px));background:#111;border-top:1px solid #222;z-index:5}
+.live-controls button{width:46px;height:46px;border-radius:50%;border:0;background:#2a2a2e;color:#fff;font-size:1.05rem;display:grid;place-items:center}
+.live-controls button.hang{background:#e11d48;width:54px;height:54px}
+.live-controls button.on{box-shadow:0 0 0 2px #a78bfa}
+.call-orb-wrap{position:absolute;right:12px;bottom:12px;width:72px;height:72px;display:none;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+.call-orb{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#93c5fd,#3b82f6 50%,#1d4ed8);box-shadow:0 0 24px rgba(59,130,246,.55);animation:orbPulse 2.4s ease-in-out infinite}
+.call-orb.listening{box-shadow:0 0 28px rgba(124,108,240,.65)}
+.call-orb.speaking{box-shadow:0 0 28px rgba(52,211,153,.55)}
+.call-status{position:absolute;top:48px;left:10px;right:10px;text-align:center;font-size:.8rem;color:#eee;z-index:3;text-shadow:0 1px 4px #000}
+.live-exit-fab{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:50%;border:0;background:#e11d48;color:#fff;font-size:1.1rem;display:grid;place-items:center}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v40</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v41</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -316,6 +334,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </div>
 </div></div>
 <div class="live-overlay" id="liveOverlay">
+  <button type="button" class="live-exit-fab" id="liveExitFab" title="Salir">✕</button>
   <div class="live-top">
     <span class="pill-live" id="liveModeLabel">Cámara en vivo</span>
     <span id="liveClock" style="font-size:.8rem;opacity:.7"></span>
@@ -339,7 +358,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v40";
+  var VERSION = "v41";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -1803,7 +1822,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
       var payload = {
         messages: [
-          { role: "user", content: promptText || "Describe lo que ves en esta imagen de forma natural y breve. Si hay texto, léelo." }
+          { role: "user", content: promptText || "Esto es un FRAME EN VIVO de mi cámara ahora mismo (no es una foto guardada). Describe lo que ves en este instante de forma natural y breve. Si hay texto, léelo." }
         ],
         memories: [],
         longTerm: typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-20),
@@ -1888,9 +1907,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     setCallStatus("Pensando…");
     try {
       // If camera on in call, attach frame
-      var frame = liveCamOn ? captureLiveFrame() : null;
+      var frame = captureLiveFrame(); // videollamada: siempre frame en vivo si hay cámara
       var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
-      var msgs = [{ role: "user", content: said }];
+      var liveNote = frame
+        ? "[Videollamada en vivo — frame de cámara en este instante, NO una foto antigua]\n" + said
+        : said;
+      var msgs = [{ role: "user", content: liveNote }];
       var payload = {
         messages: msgs,
         memories: [],
@@ -1935,7 +1957,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     }
   }
   async function openLive(mode) {
-    // mode: camera | call
+    // mode: camera | call (videocall)
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast("Cámara no disponible");
       return;
@@ -1943,32 +1965,33 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     liveMode = mode;
     liveBusy = false;
     liveMicOn = true;
-    liveCamOn = mode === "camera" || mode === "call";
+    liveCamOn = true;
     var ov = el("liveOverlay");
     if (ov) ov.classList.add("on");
-    el("liveModeLabel").textContent = mode === "call" ? "Llamada con Nova" : "Cámara en vivo";
+    el("liveModeLabel").textContent = mode === "call" ? "Videollamada" : "Cámara en vivo";
     var video = el("liveVideo");
     var orbWrap = el("callOrbWrap");
-    var cap = el("liveCaption");
     var st = el("callStatus");
+    // Always show full camera for both modes
+    if (video) {
+      video.style.display = "block";
+      video.style.opacity = "1";
+    }
     if (mode === "call") {
-      if (orbWrap) orbWrap.style.display = "flex";
-      if (video) video.style.display = liveCamOn ? "block" : "none";
-      if (video) video.style.opacity = liveCamOn ? "0.35" : "0";
+      if (orbWrap) orbWrap.style.display = "flex"; // small corner orb
       if (st) st.style.display = "block";
-      setCallStatus("Llamada iniciada — habla cuando quieras");
+      setCallStatus("Videollamada — te veo en vivo");
       setOrbState("listening");
+      setLiveCaption("");
     } else {
       if (orbWrap) orbWrap.style.display = "none";
-      if (video) { video.style.display = "block"; video.style.opacity = "1"; }
       if (st) st.style.display = "none";
-      setLiveCaption("Apunta y toca ✨ para que Nova describa lo que ve.");
+      setLiveCaption("Cámara en vivo — toca ✨ para que Nova describa lo que ve ahora.");
     }
-    var ok = await startLiveStream(mode === "camera" ? "environment" : "user");
-    if (!ok && mode === "call") {
-      // call can work audio-only
-      liveCamOn = false;
-      if (video) video.style.display = "none";
+    var facing = mode === "call" ? "user" : "environment";
+    var ok = await startLiveStream(facing);
+    if (!ok) {
+      toast("Activa el permiso de cámara");
     }
     if (mode === "call") startLiveListen();
   }
@@ -2019,6 +2042,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   }
 
   function bind() {
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && liveMode) { e.preventDefault(); closeLive(); }
+    });
+
     var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
     var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
     var prompt = el("prompt"); if (prompt) { prompt.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }); prompt.addEventListener("input", function () { prompt.style.height = "auto"; prompt.style.height = Math.min(prompt.scrollHeight, 140) + "px"; }); }
@@ -2042,6 +2069,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     click("btnCamera", function () { openLive("camera"); });
     click("btnCall", function () { openLive("call"); });
     click("liveHang", closeLive);
+    click("liveExitFab", closeLive);
     click("liveSnap", function () { analyzeLiveFrame(liveMode === "call" ? "Qué ves ahora?" : "Describe lo que ves con detalle útil y natural."); });
     click("liveCamToggle", toggleLiveCam);
     click("liveMicToggle", toggleLiveMic);
