@@ -107,7 +107,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v34</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v35</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -217,7 +217,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v34";
+  var VERSION = "v35";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -497,79 +497,135 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   function isIOS() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   }
-  function youtubeEmbed(id) {
-    return "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0&modestbranding=1&playsinline=1";
+  function isAndroid() {
+    return /Android/i.test(navigator.userAgent);
   }
-  function deezerEmbed(id) {
-    return "https://widget.deezer.com/widget/dark/track/" + id + "?autoplay=true&tracklist=false";
+  function apiBase() {
+    var u = store.get("apiUrl", DEFAULT_API) || DEFAULT_API;
+    return String(u).replace(/\/$/, "");
   }
-  function extractYtId(url) {
-    if (!url) return "";
-    var m = String(url).match(/(?:v=|youtu\.be\/|\/watch\?v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{6,})/);
-    return m ? m[1] : "";
+  /** Open YouTube app (or site) on a SPECIFIC video and play */
+  function openYouTubePlay(videoId) {
+    if (!videoId) return false;
+    var web = "https://www.youtube.com/watch?v=" + videoId;
+    try {
+      if (isIOS()) {
+        // YouTube iOS scheme
+        window.location.href = "youtube://www.youtube.com/watch?v=" + videoId;
+        setTimeout(function () { window.open(web, "_blank"); }, 700);
+        return true;
+      }
+      if (isAndroid()) {
+        // Android intent → YouTube app
+        window.location.href =
+          "intent://www.youtube.com/watch?v=" + videoId +
+          "#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=" +
+          encodeURIComponent(web) + ";end";
+        return true;
+      }
+      // Desktop: open watch page (autoplay depends on browser)
+      window.open(web + "&autoplay=1", "_blank");
+      return true;
+    } catch (e) {
+      window.open(web, "_blank");
+      return true;
+    }
+  }
+  /** Open Spotify app on a SPECIFIC track (needs track URI/URL) */
+  function openSpotifyPlay(spotifyUri, spotifyUrl) {
+    var web = spotifyUrl || "https://open.spotify.com/search/";
+    try {
+      if (spotifyUri && /^spotify:track:/.test(spotifyUri)) {
+        // App URI plays the track in Spotify app
+        window.location.href = spotifyUri;
+        setTimeout(function () {
+          if (spotifyUrl) window.open(spotifyUrl, "_blank");
+        }, 800);
+        return true;
+      }
+      if (spotifyUrl && /open\.spotify\.com\/track\//.test(spotifyUrl)) {
+        if (isAndroid()) {
+          window.location.href =
+            "intent://open.spotify.com/track/" + spotifyUrl.split("/track/")[1].split("?")[0] +
+            "#Intent;scheme=https;package=com.spotify.music;S.browser_fallback_url=" +
+            encodeURIComponent(spotifyUrl) + ";end";
+          return true;
+        }
+        window.location.href = spotifyUrl;
+        return true;
+      }
+      // Fallback search in app
+      if (spotifyUri) {
+        window.location.href = spotifyUri;
+        return true;
+      }
+      window.open(web, "_blank");
+      return false;
+    } catch (e) {
+      window.open(web, "_blank");
+      return false;
+    }
+  }
+  function openAppleMusic(url) {
+    if (!url) return;
+    try { window.location.href = url; }
+    catch (e) { window.open(url, "_blank"); }
   }
   function resolveMusic(query) {
-    // Parallel: Deezer (track id + preview) + Piped (youtube id) + iTunes (apple + art)
     var q = encodeURIComponent(query);
-    var out = { query: query, title: query, artist: "", art: "", preview: "", youtubeId: "", deezerId: "", appleUrl: "", spotifyUrl: "https://open.spotify.com/search/" + q };
-    var jobs = [];
-    jobs.push(
-      fetch("https://api.deezer.com/search?q=" + q + "&limit=1")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var t0 = data && data.data && data.data[0];
-          if (!t0) return;
-          out.deezerId = String(t0.id || "");
-          out.title = t0.title || out.title;
-          out.artist = (t0.artist && t0.artist.name) || out.artist;
-          out.preview = t0.preview || out.preview;
-          if (t0.album && t0.album.cover_medium) out.art = t0.album.cover_medium;
-          if (t0.link) out.deezerLink = t0.link;
-        })
-        .catch(function () {})
-    );
-    // Piped instances (public YouTube frontends)
-    var pipedHosts = [
-      "https://pipedapi.kavin.rocks",
-      "https://pipedapi.adminforge.de",
-      "https://pipedapi.nosebs.ru"
-    ];
-    jobs.push(
-      (function tryPiped(i) {
-        if (i >= pipedHosts.length) return Promise.resolve();
-        return fetch(pipedHosts[i] + "/search?q=" + q + "&filter=videos")
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            var items = Array.isArray(data) ? data : (data.items || data.results || []);
-            var vid = null;
-            for (var k = 0; k < items.length; k++) {
-              var it = items[k];
-              if (!it) continue;
-              if (it.id) { vid = extractYtId(String(it.id)) || String(it.id); break; }
-              if (it.url) { vid = extractYtId(it.url); if (vid) break; }
-              if (it.videoId) { vid = String(it.videoId); break; }
-            }
-            if (vid) out.youtubeId = vid.replace(/^\/watch\?v=/, "");
-            else return tryPiped(i + 1);
-          })
-          .catch(function () { return tryPiped(i + 1); });
-      })(0)
-    );
-    jobs.push(
-      fetch("https://itunes.apple.com/search?term=" + q + "&media=music&limit=1")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var item = data && data.results && data.results[0];
-          if (!item) return;
-          if (!out.title || out.title === query) out.title = item.trackName || out.title;
-          if (!out.artist) out.artist = item.artistName || "";
-          if (!out.preview) out.preview = item.previewUrl || "";
-          if (!out.art && item.artworkUrl100) out.art = String(item.artworkUrl100).replace("100x100bb", "300x300bb");
-          out.appleUrl = item.trackViewUrl || ("https://music.apple.com/search?term=" + q);
-        })
-        .catch(function () {})
-    );
-    return Promise.all(jobs).then(function () { return out; });
+    var base = apiBase();
+    // Prefer backend (Spotify keys + Piped)
+    return fetch(base + "/api/music-resolve?q=" + q)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && !data.error) return data;
+        throw new Error("backend resolve failed");
+      })
+      .catch(function () {
+        // Client fallback: Piped YouTube only
+        var out = {
+          query: query,
+          title: query,
+          artist: "",
+          art: "",
+          youtubeId: "",
+          spotifyUri: "",
+          spotifyUrl: "https://open.spotify.com/search/" + q,
+          appleUrl: ""
+        };
+        var hosts = [
+          "https://pipedapi.kavin.rocks",
+          "https://pipedapi.adminforge.de",
+          "https://pipedapi.nosebs.ru"
+        ];
+        function tryPiped(i) {
+          if (i >= hosts.length) return Promise.resolve(out);
+          return fetch(hosts[i] + "/search?q=" + q + "&filter=videos")
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var items = Array.isArray(data) ? data : (data.items || data.results || []);
+              for (var k = 0; k < items.length; k++) {
+                var it = items[k];
+                if (!it) continue;
+                var id = it.videoId || it.id || "";
+                if (it.url) {
+                  var m = String(it.url).match(/(?:v=|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
+                  if (m) id = m[1];
+                }
+                id = String(id).replace(/^\/watch\?v=/, "");
+                if (/^[A-Za-z0-9_-]{6,}$/.test(id)) {
+                  out.youtubeId = id;
+                  if (it.title) out.title = it.title;
+                  break;
+                }
+              }
+              if (!out.youtubeId) return tryPiped(i + 1);
+              return out;
+            })
+            .catch(function () { return tryPiped(i + 1); });
+        }
+        return tryPiped(0);
+      });
   }
   function buildMusicPlayer(query) {
     unlockAudio();
@@ -578,101 +634,85 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     var head = document.createElement("div");
     head.className = "mp-head";
     var titleEl = document.createElement("span");
-    titleEl.textContent = "🎵 " + query + " — cargando…";
+    titleEl.textContent = "🎵 " + query + " — abriendo app…";
     var stopBtn = document.createElement("button");
     stopBtn.type = "button";
     stopBtn.textContent = "Cerrar";
-    stopBtn.onclick = function () {
-      wrap.querySelectorAll("iframe").forEach(function (f) { f.src = "about:blank"; });
-      wrap.querySelectorAll("audio").forEach(function (a) {
-        try { a.pause(); a.removeAttribute("src"); a.load(); } catch (e) {}
-      });
-      wrap.remove();
-      hideNowPlaying();
-    };
+    stopBtn.onclick = function () { wrap.remove(); hideNowPlaying(); };
     head.appendChild(titleEl);
     head.appendChild(stopBtn);
     wrap.appendChild(head);
 
     var body = document.createElement("div");
-    body.style.cssText = "padding:10px;display:flex;flex-direction:column;gap:8px";
+    body.style.cssText = "padding:12px;display:flex;flex-direction:column;gap:10px";
     var status = document.createElement("div");
-    status.style.cssText = "font-size:.82rem;color:#c8c8d0";
-    status.textContent = "Buscando la pista exacta para autoplay…";
+    status.style.cssText = "font-size:.85rem;color:#c8c8d0";
+    status.textContent = "Resolviendo pista para abrir Spotify / YouTube…";
     body.appendChild(status);
     wrap.appendChild(body);
 
     resolveMusic(query).then(function (info) {
       titleEl.textContent = "🎵 " + (info.title || query) + (info.artist ? " — " + info.artist : "");
-      status.textContent = "Reproduciendo…";
+      var opened = [];
 
-      // 1) YouTube autoplay embed of the FIRST matching video (not a search page)
+      // Prefer Spotify app play when we have a track URI
+      if (info.spotifyUri || (info.spotifyUrl && /\/track\//.test(info.spotifyUrl))) {
+        openSpotifyPlay(info.spotifyUri, info.spotifyUrl);
+        opened.push("Spotify");
+      }
+
+      // YouTube app play of the specific video
       if (info.youtubeId) {
-        var ifr = document.createElement("iframe");
-        ifr.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
-        ifr.allowFullscreen = true;
-        ifr.src = youtubeEmbed(info.youtubeId);
-        ifr.style.cssText = "width:100%;height:220px;border:0;border-radius:10px";
-        body.appendChild(ifr);
+        // slight delay so Spotify app handoff doesn't cancel both
+        setTimeout(function () {
+          openYouTubePlay(info.youtubeId);
+        }, opened.length ? 600 : 0);
+        opened.push("YouTube");
       }
 
-      // 2) Deezer widget autoplay (full track stream where allowed)
-      if (info.deezerId) {
-        var ifrD = document.createElement("iframe");
-        ifrD.setAttribute("allow", "encrypted-media; autoplay");
-        ifrD.src = deezerEmbed(info.deezerId);
-        ifrD.style.cssText = "width:100%;height:120px;border:0;border-radius:10px";
-        body.appendChild(ifrD);
+      // iOS Apple Music direct track
+      if (isIOS() && info.appleUrl) {
+        setTimeout(function () { openAppleMusic(info.appleUrl); }, 900);
+        opened.push("Apple Music");
       }
 
-      // 3) HTML5 preview autoplay
-      if (info.preview) {
-        var audio = document.createElement("audio");
-        audio.controls = true;
-        audio.autoplay = true;
-        audio.src = info.preview;
-        audio.style.width = "100%";
-        body.appendChild(audio);
-        setTimeout(function () { audio.play().catch(function () {}); }, 60);
+      if (opened.length) {
+        status.textContent = "Abierto: " + opened.join(" + ") + ". Si no saltó la app, usa los botones.";
+      } else {
+        status.textContent = "No encontré ID de pista. Usa los botones.";
       }
 
-      if (!info.youtubeId && !info.deezerId && !info.preview) {
-        status.textContent = "No encontré un stream directo. Abre el botón de la app.";
-      }
-
-      // Action row — direct track pages where possible (not search)
       var actions = document.createElement("div");
       actions.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
-      function btn(label, href, color, onClick) {
-        var a = document.createElement("a");
-        a.textContent = label;
-        a.href = href || "#";
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.style.cssText = "padding:8px 12px;border-radius:10px;font-size:.8rem;text-decoration:none;color:#fff;background:" + (color || "#333");
-        if (onClick) a.onclick = onClick;
-        return a;
+      function btn(label, color, fn) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.style.cssText = "padding:10px 14px;border-radius:10px;font-size:.85rem;border:0;color:#fff;background:" + color + ";cursor:pointer";
+        b.onclick = fn;
+        return b;
       }
-      // Spotify: still search URL (no free track-id API without keys) but labeled clearly
-      actions.appendChild(btn("Spotify", info.spotifyUrl, "#1DB954"));
-      if (info.youtubeId) {
-        actions.appendChild(btn("YouTube", "https://www.youtube.com/watch?v=" + info.youtubeId + "&autoplay=1", "#c00"));
-      } else {
-        actions.appendChild(btn("YouTube", "https://www.youtube.com/results?search_query=" + encodeURIComponent(query), "#c00"));
-      }
+      actions.appendChild(btn("▶ Spotify", "#1DB954", function () {
+        openSpotifyPlay(info.spotifyUri, info.spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query)));
+      }));
+      actions.appendChild(btn("▶ YouTube", "#c00", function () {
+        if (info.youtubeId) openYouTubePlay(info.youtubeId);
+        else window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), "_blank");
+      }));
       if (info.appleUrl) {
-        actions.appendChild(btn(isIOS() ? "Apple Music" : "Apple", info.appleUrl, "#fc3c44"));
+        actions.appendChild(btn("▶ Apple Music", "#fc3c44", function () { openAppleMusic(info.appleUrl); }));
       }
-      if (info.deezerLink) actions.appendChild(btn("Deezer", info.deezerLink, "#a238ff"));
       body.appendChild(actions);
 
       showNowPlaying(
         info.title || query,
         info.spotifyUrl,
-        info.youtubeId ? ("https://www.youtube.com/watch?v=" + info.youtubeId) : ("https://www.youtube.com/results?search_query=" + encodeURIComponent(query)),
+        info.youtubeId ? ("https://www.youtube.com/watch?v=" + info.youtubeId) : "",
         info.art,
         info.artist
       );
+    }).catch(function () {
+      status.textContent = "No se pudo resolver. Prueba de nuevo.";
     });
 
     return wrap;
@@ -686,8 +726,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!np) return;
     np.classList.add("on");
     el("npTitle").textContent = query || "Música";
-    el("npArtist").textContent = artist || "Reproduciendo";
-    el("npLyrics").textContent = "Autoplay en YouTube / Deezer / preview.";
+    el("npArtist").textContent = artist || "App";
+    el("npLyrics").textContent = "Reproducción en Spotify / YouTube app.";
     if (artUrl) el("npArt").src = artUrl;
     else el("npArt").removeAttribute("src");
     var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || "#";
