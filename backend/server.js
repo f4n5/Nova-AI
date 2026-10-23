@@ -679,6 +679,124 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Internal server error." });
 });
 
+
+/** Resolve a song to YouTube video id + Spotify track URI (if API keys set) */
+let _spotifyToken = null;
+let _spotifyTokenExp = 0;
+async function getSpotifyToken() {
+  const id = process.env.SPOTIFY_CLIENT_ID || "";
+  const secret = process.env.SPOTIFY_CLIENT_SECRET || "";
+  if (!id || !secret) return null;
+  if (_spotifyToken && Date.now() < _spotifyTokenExp - 30000) return _spotifyToken;
+  const basic = Buffer.from(id + ":" + secret).toString("base64");
+  const r = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + basic,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) return null;
+  _spotifyToken = j.access_token;
+  _spotifyTokenExp = Date.now() + (Number(j.expires_in) || 3600) * 1000;
+  return _spotifyToken;
+}
+
+app.get("/api/music-resolve", async (req, res) => {
+  const q = String(req.query.q || req.query.query || "").trim().slice(0, 200);
+  if (!q) return res.status(400).json({ error: "q required" });
+  const out = {
+    query: q,
+    title: q,
+    artist: "",
+    art: "",
+    youtubeId: "",
+    spotifyUri: "",
+    spotifyUrl: "https://open.spotify.com/search/" + encodeURIComponent(q),
+    appleUrl: "",
+  };
+
+  // Spotify track search (optional env keys)
+  try {
+    const token = await getSpotifyToken();
+    if (token) {
+      const sr = await fetch(
+        "https://api.spotify.com/v1/search?type=track&limit=1&q=" + encodeURIComponent(q),
+        { headers: { Authorization: "Bearer " + token } }
+      );
+      const sj = await sr.json().catch(() => ({}));
+      const tr = sj.tracks && sj.tracks.items && sj.tracks.items[0];
+      if (tr) {
+        out.title = tr.name || out.title;
+        out.artist = (tr.artists && tr.artists[0] && tr.artists[0].name) || "";
+        out.spotifyUri = tr.uri || ("spotify:track:" + tr.id);
+        out.spotifyUrl = tr.external_urls && tr.external_urls.spotify
+          ? tr.external_urls.spotify
+          : ("https://open.spotify.com/track/" + tr.id);
+        if (tr.album && tr.album.images && tr.album.images[1]) out.art = tr.album.images[1].url;
+        else if (tr.album && tr.album.images && tr.album.images[0]) out.art = tr.album.images[0].url;
+      }
+    }
+  } catch (e) {
+    console.warn("spotify resolve", e.message);
+  }
+
+  // YouTube via Piped
+  const pipedHosts = [
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.adminforge.de",
+    "https://pipedapi.nosebs.ru",
+  ];
+  for (const host of pipedHosts) {
+    try {
+      const pr = await fetch(host + "/search?q=" + encodeURIComponent(q) + "&filter=videos");
+      const pj = await pr.json().catch(() => null);
+      const items = Array.isArray(pj) ? pj : (pj && (pj.items || pj.results)) || [];
+      for (const it of items) {
+        if (!it) continue;
+        let id = it.videoId || it.id || "";
+        if (typeof id === "string" && id.includes("watch")) {
+          const m = id.match(/v=([A-Za-z0-9_-]{6,})/);
+          id = m ? m[1] : id;
+        }
+        if (it.url) {
+          const m = String(it.url).match(/(?:v=|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
+          if (m) id = m[1];
+        }
+        if (id && /^[A-Za-z0-9_-]{6,}$/.test(String(id))) {
+          out.youtubeId = String(id);
+          if (it.title && out.title === q) out.title = it.title;
+          break;
+        }
+      }
+      if (out.youtubeId) break;
+    } catch (e) {
+      /* try next */
+    }
+  }
+
+  // iTunes / Apple Music direct track URL
+  try {
+    const ir = await fetch(
+      "https://itunes.apple.com/search?term=" + encodeURIComponent(q) + "&media=music&limit=1"
+    );
+    const ij = await ir.json().catch(() => ({}));
+    const item = ij.results && ij.results[0];
+    if (item) {
+      if (out.title === q) out.title = item.trackName || out.title;
+      if (!out.artist) out.artist = item.artistName || "";
+      if (!out.art && item.artworkUrl100)
+        out.art = String(item.artworkUrl100).replace("100x100bb", "300x300bb");
+      out.appleUrl = item.trackViewUrl || "";
+    }
+  } catch (e) {}
+
+  res.json(out);
+});
+
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Nova API on 0.0.0.0:" + PORT + " model=" + MODEL + " key=" + (API_KEY ? "yes" : "NO"));
 });
