@@ -142,12 +142,35 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .avatar-panel{display:none;position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:auto;top:auto;transform:none;z-index:45;width:min(260px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden}
 .avatar-stage{height:180px}
 }
+
+.live-overlay{display:none;position:fixed;inset:0;z-index:80;background:#000;color:#fff;flex-direction:column}
+.live-overlay.on{display:flex}
+.live-video-wrap{flex:1;position:relative;min-height:0;background:#111}
+.live-video-wrap video{width:100%;height:100%;object-fit:cover;background:#000}
+.live-caption{position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.55);font-size:.9rem;line-height:1.35;backdrop-filter:blur(8px);max-height:30%;overflow:auto}
+.live-top{position:absolute;top:0;left:0;right:0;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent);z-index:2}
+.live-top .pill-live{font-size:.75rem;opacity:.85}
+.live-controls{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:18px;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));background:#0a0a0a}
+.live-controls button{width:56px;height:56px;border-radius:50%;border:0;background:#2a2a2a;color:#fff;font-size:1.25rem;display:grid;place-items:center}
+.live-controls button.hang{background:#e11d48;width:64px;height:64px}
+.live-controls button.on{background:#7c6cf0}
+.live-controls button:disabled{opacity:.4}
+.call-orb-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;background:#000}
+.call-orb{width:min(200px,42vw);height:min(200px,42vw);border-radius:50%;background:radial-gradient(circle at 35% 30%,#dbeafe,#60a5fa 40%,#1e3a8a 80%);box-shadow:0 0 60px rgba(96,165,250,.45);animation:orbPulse 2.8s ease-in-out infinite}
+.call-orb.listening{box-shadow:0 0 80px rgba(124,108,240,.55);animation:orbPulse 1.2s ease-in-out infinite}
+.call-orb.speaking{box-shadow:0 0 90px rgba(52,211,153,.5)}
+@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.call-status{position:absolute;bottom:110px;left:16px;right:16px;text-align:center;font-size:.9rem;color:#ccc;z-index:2}
+@media(max-width:720px){
+.live-controls button{width:52px;height:52px}
+.live-controls button.hang{width:60px;height:60px}
+}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v39</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v40</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -185,6 +208,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
         <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
         <button type="button" class="tool" id="btnMusic" title="Poner musica">🎵</button>
+        <button type="button" class="tool" id="btnCamera" title="Cámara en vivo">📷</button>
+        <button type="button" class="tool" id="btnCall" title="Llamada">📞</button>
         <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
         <button type="button" class="tool" id="btnParlant" title="Parlante Hey Nova">🔊</button>
         <button type="button" class="send" id="send">↑</button>
@@ -290,12 +315,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button type="button" class="secondary" data-close="authModal">Cerrar</button>
   </div>
 </div></div>
+<div class="live-overlay" id="liveOverlay">
+  <div class="live-top">
+    <span class="pill-live" id="liveModeLabel">Cámara en vivo</span>
+    <span id="liveClock" style="font-size:.8rem;opacity:.7"></span>
+  </div>
+  <div class="live-video-wrap" id="liveVideoWrap">
+    <video id="liveVideo" playsinline autoplay muted></video>
+    <div class="call-orb-wrap" id="callOrbWrap" style="display:none"><div class="call-orb" id="callOrb"></div></div>
+    <div class="live-caption" id="liveCaption" style="display:none"></div>
+    <div class="call-status" id="callStatus" style="display:none">Toca el micrófono y habla</div>
+  </div>
+  <div class="live-controls">
+    <button type="button" id="liveFlip" title="Cambiar cámara">🔄</button>
+    <button type="button" id="liveCamToggle" title="Cámara">📷</button>
+    <button type="button" id="liveMicToggle" title="Mic" class="on">🎤</button>
+    <button type="button" id="liveSnap" title="Analizar ahora">✨</button>
+    <button type="button" class="hang" id="liveHang" title="Cerrar">✕</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v39";
+  var VERSION = "v40";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -1663,6 +1707,317 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     return bits;
   }
 
+
+  // ——— Live camera + Call mode ———
+  var liveMode = null; // "camera" | "call" | null
+  var liveStream = null;
+  var liveFacing = "environment";
+  var liveRec = null;
+  var liveBusy = false;
+  var liveCamOn = true;
+  var liveMicOn = true;
+
+  function setLiveCaption(text) {
+    var c = el("liveCaption");
+    if (!c) return;
+    if (!text) { c.style.display = "none"; c.textContent = ""; return; }
+    c.style.display = "block";
+    c.textContent = text;
+  }
+  function setCallStatus(text) {
+    var s = el("callStatus");
+    if (s) s.textContent = text || "";
+  }
+  function setOrbState(state) {
+    var orb = el("callOrb");
+    if (!orb) return;
+    orb.classList.remove("listening", "speaking");
+    if (state) orb.classList.add(state);
+  }
+  async function startLiveStream(facing) {
+    stopLiveStream();
+    facing = facing || liveFacing;
+    var constraints = {
+      audio: false,
+      video: {
+        facingMode: { ideal: facing },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    try {
+      liveStream = await navigator.mediaDevices.getUserMedia(constraints);
+      var v = el("liveVideo");
+      if (v) {
+        v.srcObject = liveStream;
+        v.muted = true;
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+      liveFacing = facing;
+      liveCamOn = true;
+      return true;
+    } catch (e) {
+      console.warn(e);
+      toast("No se pudo abrir la cámara");
+      return false;
+    }
+  }
+  function stopLiveStream() {
+    if (liveStream) {
+      liveStream.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) {} });
+      liveStream = null;
+    }
+    var v = el("liveVideo");
+    if (v) v.srcObject = null;
+  }
+  function captureLiveFrame() {
+    var v = el("liveVideo");
+    if (!v || !v.videoWidth) return null;
+    var canvas = document.createElement("canvas");
+    var maxW = 960;
+    var scale = Math.min(1, maxW / v.videoWidth);
+    canvas.width = Math.round(v.videoWidth * scale);
+    canvas.height = Math.round(v.videoHeight * scale);
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    var dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    var comma = dataUrl.indexOf(",");
+    return {
+      mimeType: "image/jpeg",
+      data: dataUrl.slice(comma + 1),
+      preview: dataUrl
+    };
+  }
+  async function analyzeLiveFrame(promptText) {
+    if (liveBusy) return;
+    var frame = captureLiveFrame();
+    if (!frame) {
+      toast("Sin imagen de cámara");
+      return;
+    }
+    liveBusy = true;
+    setLiveCaption("Mirando…");
+    setCallStatus("Nova está viendo…");
+    try {
+      var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+      var payload = {
+        messages: [
+          { role: "user", content: promptText || "Describe lo que ves en esta imagen de forma natural y breve. Si hay texto, léelo." }
+        ],
+        memories: [],
+        longTerm: typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-20),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: false,
+        image: { mimeType: frame.mimeType, data: frame.data }
+      };
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var answer = String(data.reply || "No veo bien.");
+      if (typeof stripVoiceDirectives === "function") answer = stripVoiceDirectives(answer);
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      setLiveCaption(answer);
+      setCallStatus(answer.slice(0, 120));
+      // also push into main chat lightly
+      if (!current()) newChat();
+      var c = current();
+      if (c) {
+        c.messages.push({ role: "user", text: promptText || "(cámara en vivo)", imagePreview: frame.preview });
+        c.messages.push({ role: "assistant", text: answer });
+        c.updated = Date.now();
+        saveChats();
+      }
+      speakText(answer);
+      setOrbState("speaking");
+      setTimeout(function () { setOrbState(liveMicOn ? "listening" : ""); }, 2000);
+    } catch (e) {
+      setLiveCaption("Error: " + (e.message || e));
+      toast("Error de visión");
+    } finally {
+      liveBusy = false;
+    }
+  }
+  function stopLiveRec() {
+    try { if (liveRec) { liveRec.onend = null; liveRec.stop(); } } catch (e) {}
+    liveRec = null;
+  }
+  function startLiveListen() {
+    if (!liveMicOn || liveMode !== "call" || liveBusy) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setCallStatus("Dictado no disponible en este navegador"); return; }
+    stopLiveRec();
+    try {
+      var rec = new SR();
+      liveRec = rec;
+      rec.lang = "es-ES";
+      rec.continuous = false;
+      rec.interimResults = false;
+      setOrbState("listening");
+      setCallStatus("Te escucho…");
+      rec.onresult = function (ev) {
+        var said = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+        if (!said) return;
+        setCallStatus("Tú: " + said);
+        handleCallUtterance(said);
+      };
+      rec.onerror = function () {
+        setOrbState("");
+        if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 600);
+      };
+      rec.onend = function () {
+        liveRec = null;
+        if (liveMode === "call" && liveMicOn && !liveBusy) setTimeout(startLiveListen, 400);
+      };
+      rec.start();
+    } catch (e) {
+      setCallStatus("No se pudo usar el mic");
+    }
+  }
+  async function handleCallUtterance(said) {
+    if (liveBusy) return;
+    liveBusy = true;
+    stopLiveRec();
+    setOrbState("");
+    setCallStatus("Pensando…");
+    try {
+      // If camera on in call, attach frame
+      var frame = liveCamOn ? captureLiveFrame() : null;
+      var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+      var msgs = [{ role: "user", content: said }];
+      var payload = {
+        messages: msgs,
+        memories: [],
+        longTerm: typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-20),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: true,
+        image: frame ? { mimeType: frame.mimeType, data: frame.data } : null
+      };
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var answer = String(data.reply || "");
+      if (typeof stripVoiceDirectives === "function") answer = stripVoiceDirectives(answer);
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      setCallStatus(answer.slice(0, 160));
+      if (frame) setLiveCaption(answer);
+      if (!current()) newChat();
+      var c = current();
+      if (c) {
+        c.messages.push({ role: "user", text: said, imagePreview: frame ? frame.preview : undefined });
+        c.messages.push({ role: "assistant", text: answer });
+        saveChats();
+      }
+      setOrbState("speaking");
+      speakText(answer);
+      // resume listen after speech roughly
+      setTimeout(function () {
+        liveBusy = false;
+        setOrbState(liveMicOn ? "listening" : "");
+        if (liveMode === "call" && liveMicOn) startLiveListen();
+      }, Math.min(8000, 800 + String(answer).length * 40));
+    } catch (e) {
+      liveBusy = false;
+      setCallStatus("Error: " + (e.message || e));
+      if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 800);
+    }
+  }
+  async function openLive(mode) {
+    // mode: camera | call
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast("Cámara no disponible");
+      return;
+    }
+    liveMode = mode;
+    liveBusy = false;
+    liveMicOn = true;
+    liveCamOn = mode === "camera" || mode === "call";
+    var ov = el("liveOverlay");
+    if (ov) ov.classList.add("on");
+    el("liveModeLabel").textContent = mode === "call" ? "Llamada con Nova" : "Cámara en vivo";
+    var video = el("liveVideo");
+    var orbWrap = el("callOrbWrap");
+    var cap = el("liveCaption");
+    var st = el("callStatus");
+    if (mode === "call") {
+      if (orbWrap) orbWrap.style.display = "flex";
+      if (video) video.style.display = liveCamOn ? "block" : "none";
+      if (video) video.style.opacity = liveCamOn ? "0.35" : "0";
+      if (st) st.style.display = "block";
+      setCallStatus("Llamada iniciada — habla cuando quieras");
+      setOrbState("listening");
+    } else {
+      if (orbWrap) orbWrap.style.display = "none";
+      if (video) { video.style.display = "block"; video.style.opacity = "1"; }
+      if (st) st.style.display = "none";
+      setLiveCaption("Apunta y toca ✨ para que Nova describa lo que ve.");
+    }
+    var ok = await startLiveStream(mode === "camera" ? "environment" : "user");
+    if (!ok && mode === "call") {
+      // call can work audio-only
+      liveCamOn = false;
+      if (video) video.style.display = "none";
+    }
+    if (mode === "call") startLiveListen();
+  }
+  function closeLive() {
+    liveMode = null;
+    liveBusy = false;
+    stopLiveRec();
+    stopLiveStream();
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    var ov = el("liveOverlay");
+    if (ov) ov.classList.remove("on");
+    setLiveCaption("");
+    setOrbState("");
+    setCallStatus("");
+  }
+  function toggleLiveCam() {
+    liveCamOn = !liveCamOn;
+    var video = el("liveVideo");
+    var btn = el("liveCamToggle");
+    if (btn) btn.classList.toggle("on", liveCamOn);
+    if (!liveCamOn) {
+      stopLiveStream();
+      if (video) video.style.display = "none";
+    } else {
+      startLiveStream(liveFacing).then(function (ok) {
+        if (video) {
+          video.style.display = ok ? "block" : "none";
+          video.style.opacity = liveMode === "call" ? "0.35" : "1";
+        }
+      });
+    }
+  }
+  function toggleLiveMic() {
+    liveMicOn = !liveMicOn;
+    var btn = el("liveMicToggle");
+    if (btn) btn.classList.toggle("on", liveMicOn);
+    if (!liveMicOn) {
+      stopLiveRec();
+      setOrbState("");
+      setCallStatus("Mic off");
+    } else if (liveMode === "call") {
+      startLiveListen();
+    }
+  }
+  function flipLiveCam() {
+    liveFacing = liveFacing === "environment" ? "user" : "environment";
+    if (liveCamOn) startLiveStream(liveFacing);
+  }
+
   function bind() {
     var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
     var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
@@ -1684,6 +2039,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     });
     click("mobileSettings", function () { openModal("settingsModal"); });
     click("btnMic", dictationOnce);
+    click("btnCamera", function () { openLive("camera"); });
+    click("btnCall", function () { openLive("call"); });
+    click("liveHang", closeLive);
+    click("liveSnap", function () { analyzeLiveFrame(liveMode === "call" ? "Qué ves ahora?" : "Describe lo que ves con detalle útil y natural."); });
+    click("liveCamToggle", toggleLiveCam);
+    click("liveMicToggle", toggleLiveMic);
+    click("liveFlip", flipLiveCam);
     click("npClose", hideNowPlaying);
     click("btnParlant", toggleParlant);
     click("btnImg", function () { var f = el("fileImg"); if (f) f.click(); });
