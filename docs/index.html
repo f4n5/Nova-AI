@@ -126,9 +126,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .bubble .stream-caret{display:inline-block;width:7px;height:1em;background:#7c6cf0;margin-left:2px;animation:blink .9s step-end infinite;vertical-align:text-bottom}
 @keyframes blink{50%{opacity:0}}
 
-.avatar-panel{display:none;position:fixed;right:12px;top:60px;z-index:45;width:min(280px,calc(100vw - 24px));background:var(--card,#fff);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.15);overflow:hidden}
+.avatar-panel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;width:min(360px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
 .avatar-panel.on{display:block;animation:npIn .2s ease}
-.avatar-stage{height:220px;background:radial-gradient(ellipse at 50% 70%,#2a2450 0%,#0f1117 70%);position:relative;overflow:hidden}
+.avatar-stage{height:min(420px,55vh);background:radial-gradient(ellipse at 50% 80%,#3d2f6b 0%,#12141c 55%,#0a0b10 100%);position:relative;overflow:hidden}
 .avatar-stage canvas{width:100%!important;height:100%!important;display:block}
 .avatar-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
 .avatar-face{font-size:72px;line-height:1;animation:avatarBob 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))}
@@ -139,7 +139,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .avatar-controls button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#f4f4f8;font-size:.72rem;cursor:pointer}
 .avatar-controls button.on{background:#7c6cf0;color:#fff;border-color:#7c6cf0}
 @media(max-width:720px){
-.avatar-panel{left:12px;right:12px;width:auto;top:52px}
+.avatar-panel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;width:min(360px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
 .avatar-stage{height:180px}
 }
 </style>
@@ -147,7 +147,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v37</span></div>
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v38</span></div>
   <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
   <div class="section-label">Conversaciones</div>
   <div class="history" id="history"></div>
@@ -161,6 +161,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <header class="topbar">
     <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
     <div class="top-actions">
+      <button type="button" class="iconbtn" id="avatarBtn" title="Avatar 3D" aria-label="Avatar">🧍</button>
       <select class="mode-select" id="modeSelect">
         <option value="equilibrado">Equilibrado</option>
         <option value="amigable">Amigable</option>
@@ -274,7 +275,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 (function () {
   "use strict";
   var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
-  var VERSION = "v37";
+  var VERSION = "v38";
   function el(id) { return document.getElementById(id); }
   var store = {
     get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
@@ -543,11 +544,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 
   function wantsMusic(text) {
-    // Only explicit user requests — never soft mentions
-    var s = String(text || "");
-    if (/\[\[\s*music\s*:/i.test(s) || /\/(?:music|musica|song)\b/i.test(s)) return true;
-    return /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b.{0,48}\b(musica|música|cancion|canción|tema|song|track|playlist)\b/i.test(s)
-      || /\b(pon|poner|ponme|reproduce|play)\s+(?:la\s+|el\s+)?(?:cancion|canción|tema)\b/i.test(s);
+    var s = String(text || "").trim();
+    if (!s) return false;
+    if (/^\/(?:music|musica|song)\b/i.test(s)) return true;
+    if (/\[\[\s*music\s*:/i.test(s)) return true;
+    // must have an explicit play verb AND a music noun
+    var hasVerb = /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b/i.test(s);
+    var hasNoun = /\b(musica|música|cancion|canción|tema|song|track|playlist|album|álbum)\b/i.test(s);
+    return hasVerb && hasNoun;
   }
   function extractMusicQuery(text) {
     var s = String(text || "");
@@ -840,7 +844,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (role === "assistant") {
       fillRich(body, text);
       if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
-      if (musicQuery) attachMusicToBubble(body, musicQuery, !!autoMusic);
+      if (musicQuery) attachMusicToBubble(body, musicQuery, false);
       var tools = document.createElement("div"); tools.className = "msg-tools";
       var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
       var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
@@ -1026,14 +1030,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       var answer = stripMusicTags(stripVoiceDirectives(rawAnswer));
       if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
       var outImg = data.imageUrl || null;
-      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined, musicQuery: musicQ || undefined });
+      // STRICT: music UI only if THIS user message explicitly asked to play music
+      var userAskedMusic = wantsMusic(text) || !!(userMusicQ && String(userMusicQ).length > 1);
+      var finalMusic = userAskedMusic ? String(userMusicQ || musicQ || "").trim() : "";
+      if (!userAskedMusic) { musicQ = ""; finalMusic = ""; }
+      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined, musicQuery: finalMusic || undefined });
       saveChats();
       if (wait.parentNode) wait.remove();
-      var userAskedMusic = !!(typeof userMusicQ !== "undefined" && userMusicQ) || wantsMusic(text);
-      var finalMusic = userAskedMusic ? (musicQ || userMusicQ || "") : "";
-      // ignore AI [[music:]] tags unless the user asked to play something
-      appendMessage("assistant", answer, true, outImg, finalMusic || null, userAskedMusic);
-      if (finalMusic && userAskedMusic) { setAvatarMusicMode(true); try { setAvatarExpression("music"); openAvatarPanel(); } catch (e) {} }
+      appendMessage("assistant", answer, true, outImg, finalMusic || null, false);
+      // never auto-open Spotify/YT — user must press ▶
+      if (finalMusic) { try { setAvatarExpression("music"); } catch (e) {} }
       // Auto tasks from assistant/user text
       try {
         extractTasksFromText(text).forEach(addTask);
@@ -1291,32 +1297,32 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     applyAvatarMeshExpr(expr);
   }
   function applyAvatarMeshExpr(expr) {
-    if (!avatarThree) return;
+    if (!avatarThree || !avatarThree.mouth) return;
     var mouth = avatarThree.mouth;
     var head = avatarThree.head;
-    if (!mouth || !head) return;
-    // simple morph via scale
     if (expr === "happy" || expr === "love" || expr === "excited") {
-      mouth.scale.set(1.2, 0.55, 1);
-      mouth.position.y = -0.22;
-      head.material.color.setHex(0xf5c6a5);
+      mouth.scale.set(1.25, 0.45, 0.55);
+      mouth.position.set(0, 1.48, 0.23);
+      if (head) head.material.color.setHex(0xf5c6a5);
     } else if (expr === "sad") {
-      mouth.scale.set(0.9, 0.35, 1);
-      mouth.position.y = -0.28;
-      head.material.color.setHex(0xe8b89a);
+      mouth.scale.set(0.85, 0.28, 0.5);
+      mouth.position.set(0, 1.46, 0.23);
+      if (head) head.material.color.setHex(0xe8b89a);
     } else if (expr === "think") {
-      mouth.scale.set(0.5, 0.35, 1);
-      mouth.position.y = -0.24;
+      mouth.scale.set(0.45, 0.3, 0.45);
+      mouth.position.set(0, 1.49, 0.23);
     } else if (expr === "music") {
-      mouth.scale.set(1.1, 0.5, 1);
-      mouth.position.y = -0.22;
-      head.material.color.setHex(0xf0c8ff);
+      mouth.scale.set(1.15, 0.42, 0.55);
+      if (head) head.material.color.setHex(0xf0c8ff);
+      if (avatarThree.hp) avatarThree.hp.visible = true;
     } else {
-      mouth.scale.set(1, 0.4, 1);
-      mouth.position.y = -0.25;
-      head.material.color.setHex(0xf1c27d);
+      mouth.scale.set(1, 0.35, 0.5);
+      mouth.position.set(0, 1.48, 0.23);
+      if (head) head.material.color.setHex(0xf0c29a);
+      if (avatarThree.hp) avatarThree.hp.visible = false;
     }
   }
+
   function loadThree(cb) {
     if (window.THREE) { cb(); return; }
     var s = document.createElement("script");
@@ -1330,65 +1336,119 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     if (!stage || !window.THREE) return false;
     var fb = el("avatarFallback");
     try {
-      var w = stage.clientWidth || 280;
-      var h = stage.clientHeight || 220;
+      // clear old canvas
+      stage.querySelectorAll("canvas").forEach(function (c) { c.remove(); });
+      var w = stage.clientWidth || 360;
+      var h = stage.clientHeight || 420;
+      var THREE = window.THREE;
       var scene = new THREE.Scene();
-      var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-      camera.position.set(0, 0.2, 2.4);
+      var camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      camera.position.set(0, 1.0, 3.2);
+      camera.lookAt(0, 0.85, 0);
       var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
       stage.appendChild(renderer.domElement);
       if (fb) fb.style.display = "none";
 
-      var light = new THREE.DirectionalLight(0xffffff, 1.1);
-      light.position.set(2, 3, 4);
-      scene.add(light);
-      scene.add(new THREE.AmbientLight(0x8866ff, 0.45));
+      var hemi = new THREE.HemisphereLight(0xb8c0ff, 0x222233, 0.9);
+      scene.add(hemi);
+      var key = new THREE.DirectionalLight(0xffffff, 1.05);
+      key.position.set(2.5, 5, 3);
+      scene.add(key);
+      var fill = new THREE.DirectionalLight(0x8866ff, 0.35);
+      fill.position.set(-3, 2, -1);
+      scene.add(fill);
 
-      // body
-      var bodyMat = new THREE.MeshStandardMaterial({ color: 0x7c6cf0, roughness: 0.4, metalness: 0.1 });
-      var body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.55, 4, 12), bodyMat);
-      body.position.y = -0.55;
-      scene.add(body);
+      // floor disc
+      var floor = new THREE.Mesh(
+        new THREE.CircleGeometry(1.2, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1a1d2e, metalness: 0.2, roughness: 0.8 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0;
+      scene.add(floor);
+
+      var skin = new THREE.MeshStandardMaterial({ color: 0xf0c29a, roughness: 0.55, metalness: 0.05 });
+      var cloth = new THREE.MeshStandardMaterial({ color: 0x7c6cf0, roughness: 0.45, metalness: 0.15 });
+      var clothDark = new THREE.MeshStandardMaterial({ color: 0x4a3fb0, roughness: 0.5, metalness: 0.1 });
+      var hairMat = new THREE.MeshStandardMaterial({ color: 0x2b2244, roughness: 0.7 });
+      var eyeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22 });
+      var mouthMat = new THREE.MeshStandardMaterial({ color: 0xc45c6a });
+
+      var root = new THREE.Group();
+      scene.add(root);
+
+      // legs
+      var legGeo = new THREE.CapsuleGeometry(0.11, 0.45, 4, 10);
+      var leftLeg = new THREE.Mesh(legGeo, clothDark);
+      leftLeg.position.set(-0.14, 0.35, 0);
+      var rightLeg = new THREE.Mesh(legGeo, clothDark);
+      rightLeg.position.set(0.14, 0.35, 0);
+      root.add(leftLeg);
+      root.add(rightLeg);
+
+      // torso
+      var torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.4, 6, 14), cloth);
+      torso.position.y = 0.95;
+      root.add(torso);
+
+      // arms
+      var armGeo = new THREE.CapsuleGeometry(0.08, 0.38, 4, 10);
+      var leftArm = new THREE.Mesh(armGeo, skin);
+      leftArm.position.set(-0.42, 1.0, 0);
+      leftArm.rotation.z = 0.25;
+      var rightArm = new THREE.Mesh(armGeo, skin);
+      rightArm.position.set(0.42, 1.0, 0);
+      rightArm.rotation.z = -0.25;
+      root.add(leftArm);
+      root.add(rightArm);
+
+      // neck
+      var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.12, 12), skin);
+      neck.position.y = 1.35;
+      root.add(neck);
 
       // head
-      var headMat = new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.55 });
-      var head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 32, 32), headMat);
-      head.position.y = 0.35;
-      scene.add(head);
+      var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 32, 32), skin);
+      head.position.y = 1.58;
+      root.add(head);
+
+      // hair
+      var hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 24), hairMat);
+      hair.scale.set(1.05, 0.7, 1.05);
+      hair.position.set(0, 1.72, -0.02);
+      root.add(hair);
 
       // eyes
-      var eyeMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
-      var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), eyeMat);
-      leftEye.position.set(-0.12, 0.42, 0.32);
+      var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), eyeMat);
+      leftEye.position.set(-0.09, 1.62, 0.22);
       var rightEye = leftEye.clone();
-      rightEye.position.x = 0.12;
-      scene.add(leftEye);
-      scene.add(rightEye);
+      rightEye.position.x = 0.09;
+      root.add(leftEye);
+      root.add(rightEye);
 
       // mouth
-      var mouth = new THREE.Mesh(
-        new THREE.SphereGeometry(0.1, 12, 12),
-        new THREE.MeshStandardMaterial({ color: 0xc45c6a })
-      );
-      mouth.scale.set(1, 0.4, 0.6);
-      mouth.position.set(0, -0.25 + 0.35, 0.32);
-      scene.add(mouth);
+      var mouth = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), mouthMat);
+      mouth.scale.set(1, 0.35, 0.5);
+      mouth.position.set(0, 1.48, 0.23);
+      root.add(mouth);
 
-      // headphones ring for music mode later
+      // headphones
       var hp = new THREE.Mesh(
-        new THREE.TorusGeometry(0.42, 0.04, 8, 24),
-        new THREE.MeshStandardMaterial({ color: 0x333355 })
+        new THREE.TorusGeometry(0.28, 0.035, 8, 28),
+        new THREE.MeshStandardMaterial({ color: 0x333355, metalness: 0.4, roughness: 0.4 })
       );
       hp.rotation.x = Math.PI / 2;
-      hp.position.y = 0.35;
+      hp.position.y = 1.58;
       hp.visible = false;
-      scene.add(hp);
+      root.add(hp);
 
       avatarThree = {
-        renderer: renderer, scene: scene, camera: camera,
-        head: head, body: body, leftEye: leftEye, rightEye: rightEye,
+        renderer: renderer, scene: scene, camera: camera, root: root,
+        head: head, torso: torso, leftArm: leftArm, rightArm: rightArm,
+        leftLeg: leftLeg, rightLeg: rightLeg, leftEye: leftEye, rightEye: rightEye,
         mouth: mouth, hp: hp, t: 0
       };
       applyAvatarMeshExpr(avatarExpr);
@@ -1396,14 +1456,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       function tick() {
         if (!avatarVisible || !avatarThree) return;
         avatarThree.t += 0.016;
-        var tme = avatarThree.t;
-        head.position.y = 0.35 + Math.sin(tme * 2) * 0.03;
-        body.rotation.y = Math.sin(tme * 0.8) * 0.12;
-        head.rotation.y = Math.sin(tme * 0.9) * 0.15;
-        head.rotation.z = Math.sin(tme * 1.2) * 0.04;
-        leftEye.scale.y = 0.85 + Math.sin(tme * 0.5) * 0.1;
-        rightEye.scale.y = leftEye.scale.y;
-        hp.visible = avatarExpr === "music";
+        var tm = avatarThree.t;
+        // idle: breathe + slight sway + weight shift
+        root.rotation.y = Math.sin(tm * 0.6) * 0.18;
+        torso.scale.y = 1 + Math.sin(tm * 2.2) * 0.015;
+        head.rotation.y = Math.sin(tm * 0.9) * 0.12;
+        head.rotation.z = Math.sin(tm * 1.1) * 0.03;
+        leftArm.rotation.x = Math.sin(tm * 1.3) * 0.08;
+        rightArm.rotation.x = Math.sin(tm * 1.3 + 1) * 0.08;
+        leftLeg.rotation.x = Math.sin(tm * 0.7) * 0.04;
+        rightLeg.rotation.x = Math.sin(tm * 0.7 + 1.5) * 0.04;
+        avatarThree.hp.visible = avatarExpr === "music";
         renderer.render(scene, camera);
         avatarRaf = requestAnimationFrame(tick);
       }
@@ -1428,21 +1491,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         if (fb) fb.style.display = "flex";
         return;
       }
-      if (!avatarThree) initAvatar3D();
-      else {
-        cancelAnimationFrame(avatarRaf);
-        (function tick() {
-          if (!avatarVisible || !avatarThree) return;
-          avatarThree.t += 0.016;
-          var tme = avatarThree.t;
-          avatarThree.head.position.y = 0.35 + Math.sin(tme * 2) * 0.03;
-          avatarThree.body.rotation.y = Math.sin(tme * 0.8) * 0.12;
-          avatarThree.head.rotation.y = Math.sin(tme * 0.9) * 0.15;
-          avatarThree.hp.visible = avatarExpr === "music";
-          avatarThree.renderer.render(avatarThree.scene, avatarThree.camera);
-          avatarRaf = requestAnimationFrame(tick);
-        })();
-      }
+      cancelAnimationFrame(avatarRaf);
+      avatarThree = null;
+      initAvatar3D();
     });
   }
   function closeAvatarPanel() {
