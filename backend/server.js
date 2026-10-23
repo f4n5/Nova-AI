@@ -628,7 +628,9 @@ ${secretHappy ? "Private note: he checked in in a way that matters to this insta
 If an image is attached, describe and reason about what you see when relevant.
 When the user asks to play or put music, include one tag: [[music:song or artist or genre]]. Example: [[music:lofi hip hop]]. The client plays it. Do not say you cannot play music.
 Voice/tone MUST be [[voz:femenina]] / [[tono:alegre]] with brackets. Never bare "voz:femenina" text.
-Avatar expression tag (optional, once when mood shifts): [[avatar:happy]] [[avatar:sad]] [[avatar:think]] [[avatar:music]] [[avatar:love]] [[avatar:neutral]].
+Avatar expression tag when mood shifts (client shows 3D avatar): [[avatar:happy]] [[avatar:sad]] [[avatar:think]] [[avatar:music]] [[avatar:love]] [[avatar:neutral]] [[avatar:excited]] [[avatar:calm]].
+Persistent memory tags (client stores, do not re-ask known facts): [[memoria:fact about user]] [[like:preference]] [[name:user name]].
+Use Long-term memory below as already known — do not ask again for name, likes, or facts listed there. Be brief when recalling.
 Voice/tone tags MUST use double brackets only, e.g. [[voz:femenina]] [[tono:alegre]]. NEVER write bare lines like "voz:femenina" or "tono:alegre" without brackets — those leak into the visible message.`;
 
   try {
@@ -795,6 +797,98 @@ app.get("/api/music-resolve", async (req, res) => {
   } catch (e) {}
 
   res.json(out);
+});
+
+
+
+/** OAuth: set GOOGLE_CLIENT_ID/SECRET and GITHUB_CLIENT_ID/SECRET on Render */
+app.get("/api/auth/google", (req, res) => {
+  const id = process.env.GOOGLE_CLIENT_ID || "";
+  if (!id) return res.status(503).send("GOOGLE_CLIENT_ID not configured on server");
+  const redirect = String(req.query.redirect || "").slice(0, 500);
+  const cb = (process.env.PUBLIC_API_URL || (req.protocol + "://" + req.get("host"))).replace(/\/$/, "") + "/api/auth/google/callback";
+  const url =
+    "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + encodeURIComponent(id) +
+    "&redirect_uri=" + encodeURIComponent(cb) +
+    "&response_type=code&scope=" + encodeURIComponent("openid email profile") +
+    "&state=" + encodeURIComponent(redirect || "/");
+  res.redirect(url);
+});
+
+app.get("/api/auth/google/callback", async (req, res) => {
+  try {
+    const code = String(req.query.code || "");
+    const state = String(req.query.state || "/");
+    const id = process.env.GOOGLE_CLIENT_ID || "";
+    const secret = process.env.GOOGLE_CLIENT_SECRET || "";
+    const cb = (process.env.PUBLIC_API_URL || (req.protocol + "://" + req.get("host"))).replace(/\/$/, "") + "/api/auth/google/callback";
+    const tokRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code, client_id: id, client_secret: secret,
+        redirect_uri: cb, grant_type: "authorization_code",
+      }),
+    });
+    const tok = await tokRes.json();
+    if (!tok.access_token) return res.status(400).send("token error");
+    const ui = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: "Bearer " + tok.access_token },
+    }).then((r) => r.json());
+    const payload = Buffer.from(JSON.stringify({
+      id: "google:" + ui.id,
+      name: ui.name || ui.email || "Google",
+      email: ui.email || "",
+      provider: "google",
+      picture: ui.picture || "",
+    })).toString("base64");
+    const dest = state.split("#")[0] + "#auth=" + encodeURIComponent(payload);
+    res.redirect(dest);
+  } catch (e) {
+    res.status(500).send("auth failed");
+  }
+});
+
+app.get("/api/auth/github", (req, res) => {
+  const id = process.env.GITHUB_CLIENT_ID || "";
+  if (!id) return res.status(503).send("GITHUB_CLIENT_ID not configured on server");
+  const redirect = String(req.query.redirect || "").slice(0, 500);
+  const cb = (process.env.PUBLIC_API_URL || (req.protocol + "://" + req.get("host"))).replace(/\/$/, "") + "/api/auth/github/callback";
+  const url =
+    "https://github.com/login/oauth/authorize?client_id=" + encodeURIComponent(id) +
+    "&redirect_uri=" + encodeURIComponent(cb) +
+    "&scope=read:user user:email&state=" + encodeURIComponent(redirect || "/");
+  res.redirect(url);
+});
+
+app.get("/api/auth/github/callback", async (req, res) => {
+  try {
+    const code = String(req.query.code || "");
+    const state = String(req.query.state || "/");
+    const id = process.env.GITHUB_CLIENT_ID || "";
+    const secret = process.env.GITHUB_CLIENT_SECRET || "";
+    const tokRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: id, client_secret: secret, code }),
+    });
+    const tok = await tokRes.json();
+    if (!tok.access_token) return res.status(400).send("token error");
+    const ui = await fetch("https://api.github.com/user", {
+      headers: { Authorization: "Bearer " + tok.access_token, Accept: "application/json" },
+    }).then((r) => r.json());
+    const payload = Buffer.from(JSON.stringify({
+      id: "github:" + ui.id,
+      name: ui.name || ui.login || "GitHub",
+      email: ui.email || "",
+      provider: "github",
+      picture: ui.avatar_url || "",
+    })).toString("base64");
+    const dest = state.split("#")[0] + "#auth=" + encodeURIComponent(payload);
+    res.redirect(dest);
+  } catch (e) {
+    res.status(500).send("auth failed");
+  }
 });
 
 
