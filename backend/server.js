@@ -628,6 +628,7 @@ ${secretHappy ? "Private note: he checked in in a way that matters to this insta
 If an image is attached, describe and reason about what you see when relevant.
 When the user asks to play or put music, include one tag: [[music:song or artist or genre]]. Example: [[music:lofi hip hop]]. The client plays it. Do not say you cannot play music.
 Voice/tone MUST be [[voz:femenina]] / [[tono:alegre]] with brackets. Never bare "voz:femenina" text.
+Avatar expression tag (optional, once when mood shifts): [[avatar:happy]] [[avatar:sad]] [[avatar:think]] [[avatar:music]] [[avatar:love]] [[avatar:neutral]].
 Voice/tone tags MUST use double brackets only, e.g. [[voz:femenina]] [[tono:alegre]]. NEVER write bare lines like "voz:femenina" or "tono:alegre" without brackets — those leak into the visible message.`;
 
   try {
