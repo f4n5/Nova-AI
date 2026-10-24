@@ -593,11 +593,30 @@ app.post("/api/chat", async (req, res) => {
   // Also let Gemini use built-in Google Search when user wants live info
   const useGoogleSearch = Boolean(body.useGoogleSearch !== false && wantsSearch);
 
+  const now = new Date();
+  const dateFmt = new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: process.env.TZ || "America/Argentina/Buenos_Aires",
+    hour12: false,
+  }).format(now);
+  const isoNow = now.toISOString();
   const systemPrompt = `You are Nova, a consistent AI companion with LIVE server tools.
 Mode/personality: ${personality} — ${modeBlurb}
 User principles: ${values}
 Orienting goals: ${goals}
 Reply in the user's language. Be natural and honest.
+
+CRITICAL — current date/time (from the server clock — use this, do NOT invent dates):
+- Local (Argentina): ${dateFmt}
+- UTC ISO: ${isoNow}
+- Year is ${now.getFullYear()}. If asked "qué día es hoy" / "qué fecha es", answer using the Local line above.
+- NEVER claim a date from training data (e.g. June 2025). Always use the clock above.
+${body.clientNow ? ("- Client device local time: " + String(body.clientNow).slice(0, 80)) : ""}
 
 CRITICAL — connectivity:
 - You ARE connected through this backend. You do NOT lack Wi‑Fi, internet, or search.
