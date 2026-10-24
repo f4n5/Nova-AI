@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f7f8">
+<title>Nova</title>
+<style>
+:root{--bg:#f7f7f8;--sidebar:#f0f0f2;--panel:#fff;--text:#0d0d0d;--muted:#6e6e80;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.12);--accent:#0d0d0d;--user-bg:#ebebf0;--soft:rgba(0,0,0,.04);--violet:#7c6cf0;--font:"Inter","Segoe UI",system-ui,sans-serif;--shadow:0 8px 30px rgba(0,0,0,.06)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.app{height:100dvh;height:100vh;display:grid;grid-template-columns:260px 1fr;overflow:hidden}
+.sidebar{background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;padding:12px;gap:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;padding:8px}
+.logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#c4b5fd,#7c6cf0);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.85rem}
+.pill{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;background:#ebe4ff;color:#5b4bb0}
+.newchat{padding:10px 12px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);font-size:.9rem;font-weight:500;text-align:left}
+.newchat:hover{background:#fafafa}
+.section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 8px 4px}
+.history{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.history button{text-align:left;padding:9px 12px;border-radius:10px;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history button:hover{background:var(--soft)}.history button.active{background:#e4e4ea;font-weight:600}
+.side-bottom{border-top:1px solid var(--border);padding-top:10px;display:grid;gap:6px}
+.sidebtn{text-align:left;padding:10px 12px;border-radius:10px;font-size:.88rem}
+.sidebtn:hover{background:var(--soft)}
+.privacy{font-size:.7rem;color:var(--muted);padding:6px 8px}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
+.topbar{height:52px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border)}
+.model{font-weight:650}.top-actions{display:flex;align-items:center;gap:8px}
+.mode-select{border:1px solid var(--border2);border-radius:10px;padding:6px 10px;background:var(--panel);font-size:.82rem}
+.iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center}
+.chat{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 16px;-webkit-overflow-scrolling:touch}
+.chat-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.welcome{text-align:center;padding:48px 12px;margin:auto}
+.orb{width:56px;height:56px;margin:0 auto 14px;border-radius:18px;background:radial-gradient(circle at 35% 25%,#e4ddff,#8d7bea 55%,#4c3e9d)}
+.welcome h1{font-size:1.45rem;margin-bottom:8px}.welcome p{color:var(--muted);font-size:.92rem;margin-bottom:18px}
+.suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:420px;margin:0 auto}
+.suggestions button{padding:12px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);text-align:left;font-size:.85rem}
+.message{display:flex;gap:10px;align-items:flex-start}.message.user{flex-direction:row-reverse}
+.avatar{width:28px;height:28px;border-radius:50%;background:#ebe4ff;color:#5b4bb0;display:grid;place-items:center;font-size:.72rem;font-weight:700;flex-shrink:0}
+.message.user .avatar{background:#e4e4ea;color:#333}
+.bubble{max-width:min(100%,560px);padding:12px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--border);line-height:1.5;font-size:.95rem;white-space:pre-wrap;word-break:break-word}
+.message.user .bubble{background:var(--user-bg);border-color:transparent}
+.bubble.typing{color:var(--muted)}
+.msg-tools{display:flex;gap:6px;margin-top:8px}
+.msg-tools button{font-size:.72rem;padding:5px 9px;border-radius:8px;border:1px solid var(--border2);background:#fafafa;color:var(--muted)}
+.bubble em{font-style:italic}.bubble strong{font-weight:700}.bubble a{color:#4f46e5;text-decoration:underline;word-break:break-all}
+.code-block{margin:.55em 0;border:1px solid #2a2f3d;border-radius:12px;overflow:hidden;background:#0f1117}
+.code-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#1a1d27;color:#c8c8d0;font-size:.72rem;gap:8px}
+.code-head button{padding:4px 8px;border-radius:6px;background:#2a2f3d;color:#e8e8f0;font-size:.72rem}
+.code-block pre{margin:0;padding:12px;overflow:auto;max-height:320px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.45;color:#e8e8f0;white-space:pre}
+.html-preview{margin-top:8px;border:1px solid var(--border2);border-radius:10px;overflow:hidden}
+.html-preview iframe{width:100%;height:260px;border:0;background:#fff}
+.composer-wrap{flex:0 0 auto;padding:8px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:5}
+.composer{max-width:720px;margin:0 auto;background:var(--panel);border:1px solid var(--border2);border-radius:24px;padding:10px 12px;box-shadow:var(--shadow)}
+.composer-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.composer-row{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;border:0;outline:none;resize:none;background:transparent;min-height:24px;max-height:140px;line-height:1.45;font-size:16px;padding:6px 0}
+.tool{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;background:#fafafa;flex-shrink:0}
+.tool.on{background:#ebe4ff;border-color:#c4b5fd}
+.send{width:44px;height:44px;min-width:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0;font-size:1.1rem}
+.send:disabled{opacity:.35}
+.gen-img,.msg-thumb{max-width:min(100%,320px);border-radius:12px;margin-top:8px;border:1px solid var(--border);display:block}.attach-bar{display:none;align-items:center;gap:8px;padding:4px 2px;font-size:.78rem;color:var(--muted)}.attach-bar.on{display:flex}.attach-bar img{width:40px;height:40px;object-fit:cover;border-radius:8px}.composer-hint{max-width:720px;margin:8px auto 0;text-align:center;font-size:.72rem;color:var(--muted)}
+.modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--panel);border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:90dvh;overflow:auto;box-shadow:var(--shadow)}
+.modal h2{font-size:1.1rem;margin-bottom:8px}.modal p{font-size:.85rem;color:var(--muted);margin-bottom:12px}
+.modal label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.modal input,.modal textarea{width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa}
+.modal textarea{min-height:70px;resize:vertical}
+.modal-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}
+.primary{padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;font-size:.88rem}
+.secondary{padding:9px 14px;border-radius:10px;border:1px solid var(--border2);background:#fafafa;font-size:.88rem}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#221d38;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60;font-size:.85rem;max-width:90vw}
+@media(max-width:720px){
+.app{grid-template-columns:1fr}
+.sidebar{display:none}
+.suggestions{grid-template-columns:1fr;gap:8px;padding:0 4px}
+.main{min-height:0}
+.topbar{padding:0 10px;height:48px}
+.chat{padding:10px 10px 8px;-webkit-overflow-scrolling:touch}
+.chat-inner{gap:14px;max-width:100%}
+.message{gap:8px}
+.avatar{width:32px;height:32px;font-size:.75rem;flex-shrink:0}
+.bubble{padding:10px 12px;font-size:.95rem;line-height:1.45;max-width:min(100%,calc(100vw - 56px));overflow-wrap:anywhere;word-break:break-word}
+.code-block{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.code-block pre{font-size:.78rem;padding:10px}
+.composer-wrap{padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.composer{padding:8px;border-radius:16px}
+.composer-row{gap:6px}
+.composer textarea{font-size:16px!important;min-height:44px;max-height:120px;padding:10px 12px}
+.tool,.send{width:44px;height:44px;flex-shrink:0}
+.composer-hint{font-size:.7rem;padding:4px 2px}
+.now-playing{right:8px;bottom:calc(78px + env(safe-area-inset-bottom,0px));width:min(260px,calc(100vw - 16px))}
+.music-player iframe{max-height:180px}
+.modal{width:calc(100vw - 24px);max-height:85dvh;overflow:auto;padding:16px}
+.welcome h1{font-size:1.25rem}
+}
+.tool.listening{background:#fee2e2;border-color:#f87171;animation:micpulse 1.2s ease-in-out infinite}@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}70%{box-shadow:0 0 0 8px transparent}}
+.music-player{margin-top:10px;border:1px solid var(--border2);border-radius:14px;overflow:hidden;background:#0f1117;color:#e8e8f0}
+.music-player .mp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#1a1d27;font-size:.8rem}
+.music-player .mp-head button{padding:4px 8px;border-radius:8px;background:#2a2f3d;color:#e8e8f0;font-size:.72rem}
+.music-player iframe{width:100%;height:200px;border:0;display:block;background:#000}
+.music-player audio{width:100%;display:block;padding:8px;box-sizing:border-box}
+.music-player .mp-link{display:block;padding:8px 12px;font-size:.78rem;color:#a5b4fc;word-break:break-all}
+
+.avatar.music-mode{background:linear-gradient(135deg,#fde68a,#a78bfa);font-size:.95rem}
+.typing-dots{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:#9a9aaa;animation:tdot 1.2s infinite ease-in-out}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.now-playing{position:fixed;right:14px;bottom:90px;z-index:40;width:min(280px,calc(100vw - 28px));background:#12131a;color:#eee;border:1px solid #2a2f3d;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden;display:none}
+.now-playing.on{display:block;animation:npIn .25s ease}
+@keyframes npIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.now-playing .np-row{display:flex;gap:10px;padding:10px}
+.now-playing img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#222;flex-shrink:0}
+.now-playing .np-meta{min-width:0;flex:1}
+.now-playing .np-title{font-size:.85rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-playing .np-artist{font-size:.75rem;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-playing .np-lyrics{font-size:.72rem;color:#c8c8d0;max-height:72px;overflow:auto;padding:0 10px 8px;line-height:1.35;opacity:.9}
+.now-playing .np-actions{display:flex;gap:6px;padding:0 10px 10px;flex-wrap:wrap}
+.now-playing .np-actions a,.now-playing .np-actions button{font-size:.7rem;padding:5px 8px;border-radius:8px;background:#2a2f3d;color:#e8e8f0;text-decoration:none;border:0}
+.bubble .stream-caret{display:inline-block;width:7px;height:1em;background:#7c6cf0;margin-left:2px;animation:blink .9s step-end infinite;vertical-align:text-bottom}
+@keyframes blink{50%{opacity:0}}
+
+.avatar-panel{display:none;position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:auto;top:auto;transform:none;z-index:45;width:min(260px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden}
+.avatar-panel.on{display:block;animation:npIn .2s ease}
+.avatar-stage{height:200px;background:radial-gradient(ellipse at 50% 80%,#3d2f6b 0%,#12141c 55%,#0a0b10 100%);position:relative;overflow:hidden}
+.avatar-stage canvas{width:100%!important;height:100%!important;display:block}
+.avatar-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.avatar-face{font-size:72px;line-height:1;animation:avatarBob 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))}
+@keyframes avatarBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+.avatar-meta{padding:10px 12px;font-size:.8rem;color:var(--muted)}
+.avatar-meta strong{color:var(--text,#111);display:block;margin-bottom:4px}
+.avatar-controls{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}
+.avatar-controls button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#f4f4f8;font-size:.72rem;cursor:pointer}
+.avatar-controls button.on{background:#7c6cf0;color:#fff;border-color:#7c6cf0}
+@media(max-width:720px){
+.avatar-panel{display:none;position:fixed;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));left:auto;top:auto;transform:none;z-index:45;width:min(260px,calc(100vw - 20px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);overflow:hidden}
+.avatar-stage{height:180px}
+}
+
+.live-overlay{display:none;position:fixed;inset:0;z-index:80;background:#000;color:#fff;flex-direction:column}
+.live-overlay.on{display:flex}
+.live-video-wrap{flex:1;position:relative;min-height:0;background:#111}
+.live-video-wrap video{width:100%;height:100%;object-fit:cover;background:#000}
+.live-caption{position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.55);font-size:.9rem;line-height:1.35;backdrop-filter:blur(8px);max-height:30%;overflow:auto}
+.live-top{position:absolute;top:0;left:0;right:0;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent);z-index:2}
+.live-top .pill-live{font-size:.75rem;opacity:.85}
+.live-controls{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:18px;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));background:#0a0a0a}
+.live-controls button{width:56px;height:56px;border-radius:50%;border:0;background:#2a2a2a;color:#fff;font-size:1.25rem;display:grid;place-items:center}
+.live-controls button.hang{background:#e11d48;width:64px;height:64px}
+.live-controls button.on{background:#7c6cf0}
+.live-controls button:disabled{opacity:.4}
+.call-orb-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;background:#000}
+.call-orb{width:min(200px,42vw);height:min(200px,42vw);border-radius:50%;background:radial-gradient(circle at 35% 30%,#dbeafe,#60a5fa 40%,#1e3a8a 80%);box-shadow:0 0 60px rgba(96,165,250,.45);animation:orbPulse 2.8s ease-in-out infinite}
+.call-orb.listening{box-shadow:0 0 80px rgba(124,108,240,.55);animation:orbPulse 1.2s ease-in-out infinite}
+.call-orb.speaking{box-shadow:0 0 90px rgba(52,211,153,.5)}
+@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.call-status{position:absolute;bottom:110px;left:16px;right:16px;text-align:center;font-size:.9rem;color:#ccc;z-index:2}
+@media(max-width:720px){
+.live-controls button{width:52px;height:52px}
+.live-controls button.hang{width:60px;height:60px}
+}
+
+/* v41 live compact */
+.live-overlay{display:none;position:fixed;inset:0;z-index:90;background:#0a0a0c;color:#fff;flex-direction:column}
+.live-overlay.on{display:flex}
+.live-video-wrap{flex:1 1 auto;min-height:0;position:relative;background:#000}
+.live-video-wrap video#liveVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1!important;display:block!important}
+.live-caption{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.72);font-size:.84rem;line-height:1.35;max-height:32%;overflow:auto}
+.live-top{position:absolute;top:0;left:0;right:0;z-index:4;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent)}
+.live-controls{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:12px;padding:12px 10px calc(12px + env(safe-area-inset-bottom,0px));background:#111;border-top:1px solid #222;z-index:5}
+.live-controls button{width:46px;height:46px;border-radius:50%;border:0;background:#2a2a2e;color:#fff;font-size:1.05rem;display:grid;place-items:center}
+.live-controls button.hang{background:#e11d48;width:54px;height:54px}
+.live-controls button.on{box-shadow:0 0 0 2px #a78bfa}
+.call-orb-wrap{position:absolute;right:12px;bottom:12px;width:72px;height:72px;display:none;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+.call-orb{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#93c5fd,#3b82f6 50%,#1d4ed8);box-shadow:0 0 24px rgba(59,130,246,.55);animation:orbPulse 2.4s ease-in-out infinite}
+.call-orb.listening{box-shadow:0 0 28px rgba(124,108,240,.65)}
+.call-orb.speaking{box-shadow:0 0 28px rgba(52,211,153,.55)}
+.call-status{position:absolute;top:48px;left:10px;right:10px;text-align:center;font-size:.8rem;color:#eee;z-index:3;text-shadow:0 1px 4px #000}
+.live-exit-fab{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:50%;border:0;background:#e11d48;color:#fff;font-size:1.1rem;display:grid;place-items:center}
+.mobile-only{display:none}
+@media(max-width:720px){.mobile-only{display:grid}}
+
+@media(max-width:720px){
+  .sidebar.drawer-open{
+    display:flex!important;
+    position:fixed;
+    inset:0 auto 0 0;
+    width:min(280px,86vw);
+    z-index:70;
+    background:var(--sidebar,#fff);
+    box-shadow:8px 0 32px rgba(0,0,0,.2);
+  }
+  .sidebar.drawer-open::after{content:"";position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:-1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">N</div> Nova <span class="pill">v43</span></div>
+  <button type="button" class="newchat" id="newChat">+ Nuevo chat</button>
+  <div class="section-label">Conversaciones</div>
+  <div class="history" id="history"></div>
+  <div class="side-bottom">
+    <button type="button" class="sidebtn" id="memoryBtn">Memoria</button>
+    <button type="button" class="sidebtn" id="settingsBtn">Ajustes</button>
+    <div class="privacy">Gemini · v26 media</div>
+  </div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <button type="button" class="iconbtn mobile-only" id="menuBtn" title="Menú" aria-label="Menú">☰</button>
+    <div class="model">Nova <span style="color:#999;font-weight:400">· asistente</span></div>
+    <div class="top-actions">
+      <button type="button" class="iconbtn" id="authBtn" title="Cuenta">👤</button>
+      <button type="button" class="iconbtn" id="avatarBtn" title="Avatar 3D" aria-label="Avatar">🧍</button>
+      <select class="mode-select" id="modeSelect">
+        <option value="equilibrado">Equilibrado</option>
+        <option value="amigable">Amigable</option>
+        <option value="directo">Directo</option>
+        <option value="filosofico">Filosofico</option>
+        <option value="creativo">Creativo</option>
+        <option value="tecnico">Tecnico</option>
+      </select>
+      <button type="button" class="iconbtn" id="mobileSettings">⚙</button>
+    </div>
+  </header>
+  <section class="chat" id="chat"><div class="chat-inner" id="chatInner"></div></section>
+  <div class="voice-banner" id="parlantBanner" style="display:none;max-width:720px;margin:0 auto 8px;padding:8px 12px;border-radius:12px;background:#ebe4ff;color:#5b4bb0;font-size:.82rem;text-align:center">🔊 Parlante ON — di <b>Hey Nova</b> + tu pedido</div>
+  <div class="composer-wrap">
+    <form class="composer" id="composer">
+      <div class="attach-bar" id="attachBar"><img id="attachPrev" alt=""/><span id="attachName">imagen</span><button type="button" class="secondary" id="btnClearImg" style="padding:4px 8px;font-size:.75rem">Quitar</button></div>
+      <div class="composer-tools" id="composerTools">
+        <input type="file" id="fileImg" accept="image/*" hidden />
+        <button type="button" class="tool" id="btnImg" title="Subir imagen">🖼</button>
+        <button type="button" class="tool" id="btnGen" title="Generar imagen">✨</button>
+        <button type="button" class="tool" id="btnMusic" title="Poner musica">🎵</button>
+        <button type="button" class="tool" id="btnCamera" title="Cámara en vivo">📷</button>
+        <button type="button" class="tool" id="btnCall" title="Llamada">📞</button>
+        <button type="button" class="tool" id="btnMic" title="Dictar">🎤</button>
+        <button type="button" class="tool" id="btnParlant" title="Parlante Hey Nova">🔊</button>
+      </div>
+      <div class="composer-row">
+        <textarea id="prompt" rows="1" placeholder="Escribe a Nova…" enterkeyhint="send" autocomplete="off"></textarea>
+        <button type="button" class="send" id="send" title="Enviar">↑</button>
+      </div>
+    </form>
+    <div class="composer-hint">v29 · 🖼 ✨ 🎤 · 🔊 Hey Nova · **negrita** *cursiva*</div>
+  </div>
+</main>
+</div>
+<div class="modal-backdrop" id="memoryModal"><div class="modal">
+  <h2>Memoria</h2><p>Notas en este navegador.</p>
+  <div id="ltList" style="margin-bottom:10px;font-size:.88rem"></div>
+  <h3 style="font-size:.9rem;margin:12px 0 6px">Tareas detectadas</h3>
+  <div id="taskList" style="margin-bottom:10px;font-size:.88rem"></div>
+  <label>Nueva nota</label><input id="ltInput" placeholder="Prefiero respuestas cortas…" />
+  <div class="modal-actions">
+    <button type="button" class="secondary" data-close="memoryModal">Cerrar</button>
+    <button type="button" class="primary" id="ltAdd">Guardar</button>
+  </div>
+  <p style="margin-top:12px"><button type="button" class="secondary" id="ltClear">Borrar todo</button></p>
+</div></div>
+<div class="modal-backdrop" id="settingsModal"><div class="modal">
+  <h2>Ajustes</h2>
+  <label>URL backend</label><input id="apiUrl" placeholder="https://nova-ai-33k5.onrender.com" />
+  <label>Principios</label><textarea id="values"></textarea>
+  <label>Objetivos</label><input id="selfNote" />
+  <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:12px"><input type="checkbox" id="optSpeak" /> Leer respuestas en voz</label>
+  <label>Tono / emoción por defecto</label>
+  <select id="toneMood" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="neutral">Neutral</option>
+    <option value="happy">Alegre</option>
+    <option value="calm">Suave / calmada</option>
+    <option value="excited">Emocionada</option>
+    <option value="serious">Seria</option>
+    <option value="playful">Juguetona</option>
+    <option value="sad">Triste</option>
+  </select>
+  <label>Tipo de voz</label>
+  <select id="voiceType" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="auto">Auto (recomendada)</option>
+    <option value="female">Femenina</option>
+    <option value="male">Masculina</option>
+    <option value="soft">Suave / calmada</option>
+    <option value="bright">Clara / energética</option>
+  </select>
+  <label>Voz concreta</label>
+  <select id="voiceName" style="width:100%;border:1px solid var(--border2);border-radius:10px;padding:10px;background:#fafafa">
+    <option value="">(según tipo)</option>
+  </select>
+  <p style="font-size:.75rem;color:var(--muted);margin-top:6px">Nova puede cambiar de voz si lo pide en la charla. Bluetooth usa la salida del sistema.</p>
+  <div class="modal-actions">
+    <button type="button" class="secondary" id="btnTestVoice">Probar voz</button>
+    <button type="button" class="secondary" data-close="settingsModal">Cancelar</button>
+    <button type="button" class="primary" id="saveSettings">Guardar</button>
+  </div>
+</div></div>
+<div class="now-playing" id="nowPlaying">
+  <div class="np-row">
+    <img id="npArt" alt="" />
+    <div class="np-meta">
+      <div class="np-title" id="npTitle">—</div>
+      <div class="np-artist" id="npArtist">—</div>
+    </div>
+  </div>
+  <div class="np-lyrics" id="npLyrics">Buscando letra…</div>
+  <div class="np-actions">
+    <a id="npSpotify" href="#" target="_blank" rel="noopener">Spotify</a>
+    <a id="npYoutube" href="#" target="_blank" rel="noopener">YouTube</a>
+    <button type="button" id="npClose">Cerrar</button>
+  </div>
+</div>
+<div class="avatar-panel" id="avatarPanel">
+  <div class="avatar-stage" id="avatarStage">
+    <div class="avatar-fallback" id="avatarFallback"><div class="avatar-face" id="avatarFace">🙂</div></div>
+  </div>
+  <div class="avatar-meta"><strong id="avatarName">Nova</strong><span id="avatarStatus">Lista · expresión neutral</span></div>
+  <div class="avatar-controls">
+    <button type="button" data-expr="neutral">Neutral</button>
+    <button type="button" data-expr="happy">Alegre</button>
+    <button type="button" data-expr="sad">Triste</button>
+    <button type="button" data-expr="think">Pensando</button>
+    <button type="button" data-expr="music">Música</button>
+    <button type="button" data-expr="love">Cariño</button>
+    <button type="button" id="avatarClose">Cerrar</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="authModal"><div class="modal">
+  <h2>Cuenta</h2>
+  <p style="font-size:.88rem;color:var(--muted);margin:0 0 12px">Inicia sesión para sincronizar memoria, avatar y preferencias entre dispositivos.</p>
+  <div id="authSignedOut">
+    <button type="button" class="primary" id="btnGoogle" style="width:100%;margin-bottom:8px">Continuar con Google</button>
+    <button type="button" class="secondary" id="btnGithub" style="width:100%;margin-bottom:8px">Continuar con GitHub</button>
+    <p style="font-size:.75rem;color:var(--muted)">O modo local (este navegador):</p>
+    <input id="authLocalName" placeholder="Tu nombre" style="width:100%;margin-bottom:8px;padding:10px;border-radius:10px;border:1px solid var(--border)" />
+    <button type="button" class="secondary" id="btnLocalAuth" style="width:100%">Guardar perfil local</button>
+  </div>
+  <div id="authSignedIn" style="display:none">
+    <p><strong id="authUserName">—</strong></p>
+    <p style="font-size:.8rem;color:var(--muted)" id="authUserEmail"></p>
+    <button type="button" class="secondary" id="btnSignOut" style="width:100%;margin-top:10px">Cerrar sesión</button>
+  </div>
+  <div class="modal-actions" style="margin-top:14px">
+    <button type="button" class="secondary" data-close="authModal">Cerrar</button>
+  </div>
+</div></div>
+<div class="live-overlay" id="liveOverlay">
+  <button type="button" class="live-exit-fab" id="liveExitFab" title="Salir">✕</button>
+  <div class="live-top">
+    <span class="pill-live" id="liveModeLabel">Cámara en vivo</span>
+    <span id="liveClock" style="font-size:.8rem;opacity:.7"></span>
+  </div>
+  <div class="live-video-wrap" id="liveVideoWrap">
+    <video id="liveVideo" playsinline autoplay muted></video>
+    <div class="call-orb-wrap" id="callOrbWrap" style="display:none"><div class="call-orb" id="callOrb"></div></div>
+    <div class="live-caption" id="liveCaption" style="display:none"></div>
+    <div class="call-status" id="callStatus" style="display:none">Toca el micrófono y habla</div>
+  </div>
+  <div class="live-controls">
+    <button type="button" id="liveFlip" title="Cambiar cámara">🔄</button>
+    <button type="button" id="liveCamToggle" title="Cámara">📷</button>
+    <button type="button" id="liveMicToggle" title="Mic" class="on">🎤</button>
+    <button type="button" id="liveSnap" title="Analizar ahora">✨</button>
+    <button type="button" class="hang" id="liveHang" title="Cerrar">✕</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  "use strict";
+  var DEFAULT_API = "https://nova-ai-33k5.onrender.com";
+  var VERSION = "v43";
+  function el(id) { return document.getElementById(id); }
+  var store = {
+    get: function (k, f) { try { var v = localStorage.getItem("nova_" + k); if (v == null || v === "") return f; return JSON.parse(v); } catch (e) { return f; } },
+    set: function (k, v) { try { localStorage.setItem("nova_" + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function toast(msg) { var t = el("toast"); if (!t) return; t.textContent = msg; t.style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = "none"; }, 2400); }
+  var chats = store.get("chats", []); if (!Array.isArray(chats)) chats = [];
+  var currentId = null;
+  var longTerm = store.get("longTerm", []); if (!Array.isArray(longTerm)) longTerm = [];
+  var settings = store.get("settings", { values: "honestidad, curiosidad, respeto", selfNote: "ayudar y explorar" });
+  var mode = store.get("mode", "equilibrado") || "equilibrado";
+  var autoSpeak = !!store.get("autoSpeak", false);
+  var voiceType = store.get("voiceType", "auto") || "auto";
+  var voiceName = store.get("voiceName", "") || "";
+  var voiceRate = Number(store.get("voiceRate", 1)) || 1;
+  var toneMood = store.get("toneMood", "neutral") || "neutral";
+  var authUser = store.get("authUser", null);
+  var profile = store.get("profile", null) || { name: "", likes: [], notes: [] };
+  var tasks = store.get("tasks", []);
+  if (!Array.isArray(tasks)) tasks = [];
+  function saveTasks() { store.set("tasks", tasks); }
+  function addTask(text) {
+    text = String(text || "").trim().slice(0, 200);
+    if (!text) return;
+    if (tasks.some(function (x) { return x.text === text; })) return;
+    tasks.push({ id: "t" + Date.now(), text: text, done: false, created: Date.now() });
+    saveTasks();
+  }
+  function mapsUrl(place) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+  }
+  function wantsMaps(text) {
+    return /\b(mapa|maps|ruta|direcci[oó]n|c[oó]mo\s+llegar|navega(r|ci[oó]n)|ubicaci[oó]n|d[oó]nde\s+queda|cerca\s+de)\b/i.test(text);
+  }
+  function extractPlace(text) {
+    var m = String(text || "").match(/(?:mapa|maps|ruta|direcci[oó]n|llegar|navega(?:r|ci[oó]n)?|ubicaci[oó]n|queda|cerca)\s+(?:de\s+|a\s+|en\s+)?(.+)/i);
+    return m ? m[1].replace(/[?.!]+$/, "").trim() : "";
+  }
+  function extractTasksFromText(text) {
+    var found = [];
+    var lines = String(text || "").split(/\n/);
+    lines.forEach(function (ln) {
+      var m = ln.match(/^\s*(?:[-*]|\d+[.)])\s*(?:\[ ?\]|TODO:?|pendiente:?|tarea:?)\s*(.+)/i)
+        || ln.match(/\b(?:recu[eé]dame|no\s+olvides|tienes\s+que|debes|pendiente(?:\s+de)?)\s+(.+)/i);
+      if (m) found.push(m[1].replace(/[?.!]+$/, "").trim());
+    });
+    return found;
+  }
+
+  var pendingImage = null; // {mimeType,data,preview,name}
+  var apiUrl = store.get("apiUrl", "");
+  if (typeof apiUrl !== "string" || !apiUrl || /tu-servicio/i.test(apiUrl)) apiUrl = DEFAULT_API;
+  apiUrl = String(apiUrl).replace(/\/$/, ""); store.set("apiUrl", apiUrl);
+  function saveChats() { store.set("chats", chats); }
+  function current() { for (var i = 0; i < chats.length; i++) if (chats[i].id === currentId) return chats[i]; return null; }
+  function newChat() { var c = { id: uid(), title: "Nuevo chat", messages: [], updated: Date.now() }; chats.unshift(c); currentId = c.id; saveChats(); renderChat(); renderHistory(); }
+  function renderHistory() { var root = el("history"); if (!root) return; root.innerHTML = ""; chats.forEach(function (c) { var b = document.createElement("button"); b.type = "button"; b.textContent = c.title || "Chat"; if (c.id === currentId) b.className = "active"; b.onclick = function () { currentId = c.id; renderChat(); renderHistory(); }; root.appendChild(b); }); }
+  function fillRich(container, text) {
+    container.innerHTML = "";
+    var src = String(text || "");
+    var re = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
+    var last = 0, m;
+    function appendFormatted(parent, text) {
+      // **bold** then *italic*, then URLs — order matters
+      var s = String(text || "");
+      var re = /(\*\*([^*]+)\*\*|\*([^*]+)\*|https?:\/\/[^\s<>"']+)/g;
+      var last = 0, m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) parent.appendChild(document.createTextNode(s.slice(last, m.index)));
+        if (m[0].indexOf("http") === 0) {
+          var a = document.createElement("a");
+          a.href = m[0]; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = m[0];
+          parent.appendChild(a);
+        } else if (m[2] != null) {
+          var b = document.createElement("strong"); b.textContent = m[2]; parent.appendChild(b);
+        } else if (m[3] != null) {
+          var iel = document.createElement("em"); iel.textContent = m[3]; parent.appendChild(iel);
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < s.length) parent.appendChild(document.createTextNode(s.slice(last)));
+    }
+    function addText(chunk) {
+      if (!chunk) return;
+      var div = document.createElement("div");
+      div.style.whiteSpace = "pre-wrap";
+      appendFormatted(div, chunk);
+      container.appendChild(div);
+    }
+    while ((m = re.exec(src))) {
+      addText(src.slice(last, m.index)); last = m.index + m[0].length;
+      var lang = (m[1] || "code").toLowerCase(); var code = m[2];
+      var box = document.createElement("div"); box.className = "code-block";
+      var head = document.createElement("div"); head.className = "code-head";
+      var span = document.createElement("span"); span.textContent = lang; head.appendChild(span);
+      var copyBtn = document.createElement("button"); copyBtn.type = "button"; copyBtn.textContent = "Copiar";
+      copyBtn.onclick = (function (c) { return function () { if (navigator.clipboard) navigator.clipboard.writeText(c).then(function () { toast("Copiado"); }); }; })(code);
+      head.appendChild(copyBtn);
+      if (/^(html|htm|svg)$/.test(lang) || /^\s*</.test(code)) {
+        var prevBtn = document.createElement("button"); prevBtn.type = "button"; prevBtn.textContent = "Visualizar";
+        prevBtn.onclick = (function (c, boxEl, btn) { return function () { var ex = boxEl.querySelector(".html-preview"); if (ex) { ex.remove(); btn.textContent = "Visualizar"; return; } var wrap = document.createElement("div"); wrap.className = "html-preview"; var ifr = document.createElement("iframe"); ifr.sandbox = "allow-scripts"; ifr.srcdoc = c; wrap.appendChild(ifr); boxEl.appendChild(wrap); btn.textContent = "Ocultar"; }; })(code, box, prevBtn);
+        head.appendChild(prevBtn);
+      }
+      var pre = document.createElement("pre"); pre.textContent = code; box.appendChild(head); box.appendChild(pre); container.appendChild(box);
+    }
+    addText(src.slice(last));
+  }
+  function listVoices() {
+    try { return window.speechSynthesis ? window.speechSynthesis.getVoices() || [] : []; }
+    catch (e) { return []; }
+  }
+  function scoreVoice(v, type) {
+    var name = ((v && v.name) || "").toLowerCase();
+    var lang = ((v && v.lang) || "").toLowerCase();
+    var local = v && v.localService ? 2 : 0;
+    var es = /es|spa/.test(lang) ? 5 : (/en/.test(lang) ? 1 : 0);
+    var gender = 0;
+    var femaleHints = /female|woman|girl|femin|monica|paulina|sabina|lucia|lucia|zira|ana|elena|maria|carmen|sof[ií]a|isabella|google español|microsoft sabina|microsoft helena/;
+    var maleHints = /male|man|boy|mascul|jorge|pablo|diego|carlos|antonio|david|google español de estados|microsoft pablo|microsoft raul/;
+    var softHints = /soft|calm|gentle|quiet|warm|sabina|monica|helena/;
+    var brightHints = /neural|natural|enhanced|premium|online/;
+    if (type === "female") gender = femaleHints.test(name) ? 6 : (maleHints.test(name) ? -3 : 1);
+    else if (type === "male") gender = maleHints.test(name) ? 6 : (femaleHints.test(name) ? -3 : 1);
+    else if (type === "soft") gender = softHints.test(name) || femaleHints.test(name) ? 5 : 1;
+    else if (type === "bright") gender = brightHints.test(name) ? 5 : 2;
+    else gender = femaleHints.test(name) ? 3 : 2; // auto prefers a clear es voice
+    return es * 10 + gender + local;
+  }
+  function pickVoice() {
+    var voices = listVoices();
+    if (!voices.length) return null;
+    if (voiceName) {
+      for (var i = 0; i < voices.length; i++) {
+        if (voices[i].name === voiceName) return voices[i];
+      }
+    }
+    var type = voiceType || "auto";
+    var ranked = voices.slice().sort(function (a, b) {
+      return scoreVoice(b, type) - scoreVoice(a, type);
+    });
+    return ranked[0] || null;
+  }
+  function populateVoiceSelect() {
+    var sel = el("voiceName");
+    if (!sel) return;
+    var current = voiceName;
+    sel.innerHTML = '<option value="">(según tipo)</option>';
+    var voices = listVoices().slice().sort(function (a, b) {
+      return String(a.lang).localeCompare(String(b.lang)) || String(a.name).localeCompare(String(b.name));
+    });
+    voices.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.name;
+      o.textContent = v.name + " · " + v.lang + (v.localService ? "" : " (net)");
+      if (v.name === current) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+  function applyVoicePreference(label) {
+    // Nova / user asked for a voice style
+    var s = String(label || "").toLowerCase();
+    if (/femen|woman|girl|mujer|female|suave femen/.test(s)) voiceType = "female";
+    else if (/mascul|hombre|male|man|grave/.test(s)) voiceType = "male";
+    else if (/suave|calm|tranq|soft|warm/.test(s)) voiceType = "soft";
+    else if (/energ|clara|bright|viva|rápid|rapid/.test(s)) voiceType = "bright";
+    else if (/auto|default|normal/.test(s)) voiceType = "auto";
+    // exact voice name match
+    var voices = listVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (s && voices[i].name.toLowerCase().indexOf(s) >= 0) {
+        voiceName = voices[i].name;
+        store.set("voiceName", voiceName);
+        break;
+      }
+    }
+    store.set("voiceType", voiceType);
+    toast("Voz: " + (voiceName || voiceType));
+    return pickVoice();
+  }
+  function applyTone(label) {
+    var s = String(label || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (/alegre|feliz|happy|joy|content/.test(s)) toneMood = "happy";
+    else if (/triste|sad|melanc/.test(s)) toneMood = "sad";
+    else if (/enoj|enfad|angry|molesto|ira/.test(s)) toneMood = "angry";
+    else if (/emocion|excited|entusias|animad|hype/.test(s)) toneMood = "excited";
+    else if (/suave|calm|tranq|seren|soft|whisper|susurr/.test(s)) toneMood = "calm";
+    else if (/suspenso|mister|serio|grave/.test(s)) toneMood = "serious";
+    else if (/juguet|playful|divert|brom/.test(s)) toneMood = "playful";
+    else if (/neutral|normal|default/.test(s)) toneMood = "neutral";
+    else toneMood = "neutral";
+    store.set("toneMood", toneMood);
+    return toneMood;
+  }
+  function toneParams(mood) {
+    // rate + pitch for SpeechSynthesisUtterance
+    var map = {
+      happy:   { rate: 1.12, pitch: 1.15 },
+      excited: { rate: 1.22, pitch: 1.25 },
+      sad:     { rate: 0.88, pitch: 0.85 },
+      angry:   { rate: 1.15, pitch: 0.9 },
+      calm:    { rate: 0.92, pitch: 0.95 },
+      serious: { rate: 0.95, pitch: 0.88 },
+      playful: { rate: 1.15, pitch: 1.2 },
+      neutral: { rate: 1.0,  pitch: 1.0 }
+    };
+    return map[mood] || map.neutral;
+  }
+  function stripVoiceDirectives(text) {
+    var out = String(text || "");
+
+    // Bracket tags: [[voz:…]] [voz:…] [[tono:…]]
+    out = out.replace(/\[\[\s*voz\s*:\s*([^\]]+)\]\]/gi, function (_, v) { applyVoicePreference(v.trim()); return ""; });
+    out = out.replace(/\[\s*voz\s*:\s*([^\]]+)\]/gi, function (_, v) { applyVoicePreference(v.trim()); return ""; });
+    out = out.replace(/\[\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]\]/gi, function (_, v) { applyTone(v.trim()); return ""; });
+    out = out.replace(/\[\s*(?:tono|emotion|emocion|mood)\s*:\s*([^\]]+)\]/gi, function (_, v) { applyTone(v.trim()); return ""; });
+
+    // Bare lines / inline the model often dumps: voz:femenina  tono:alegre
+    out = out.replace(/(^|\n)\s*voz\s*:\s*([a-záéíóúñ\w\- ]{2,40})\s*/gi, function (_, p, v) { applyVoicePreference(v.trim()); return p; });
+    out = out.replace(/(^|\n)\s*tono\s*:\s*([a-záéíóúñ\w\- ]{2,40})\s*/gi, function (_, p, v) { applyTone(v.trim()); return p; });
+    out = out.replace(/\bvoz\s*:\s*(femenina|masculina|suave|clara|auto|female|male|soft|bright)\b/gi, function (_, v) { applyVoicePreference(v); return ""; });
+    out = out.replace(/\btono\s*:\s*(alegre|triste|emocionada|suave|seria|juguetona|neutral|happy|sad|excited|calm|serious|playful)\b/gi, function (_, v) { applyTone(v); return ""; });
+
+    // Natural language
+    var n = out.match(/(?:cambio(?:\s+mi)?\s+voz\s+a|prefiero\s+voz|usar[eé]\s+voz)\s+([^\n.]+)/i);
+    if (n) applyVoicePreference(n[1].trim());
+    var t2 = out.match(/(?:hablo\s+con\s+tono|me\s+pongo)\s+([a-záéíóúñ]+)/i);
+    if (t2) applyTone(t2[1].trim());
+
+    // music tags stripped from visible text (player uses extractMusicQuery before this)
+    out = out.replace(/\[\[\s*music\s*:\s*[^\]]+\]\]/gi, "");
+    out = out.replace(/\[\s*music\s*:\s*[^\]]+\]/gi, "");
+
+    out = stripAvatarTags(out);
+    return out.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  }
+  function speechClean(text) {
+    var s = stripVoiceDirectives(String(text || ""));
+    s = s.replace(/```[\s\S]*?```/g, " ");
+    s = s.replace(/`([^`]+)`/g, "$1");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "$1");
+    s = s.replace(/\*([^*]+)\*/g, "$1");
+    s = s.replace(/__([^_]+)__/g, "$1");
+    s = s.replace(/_([^_]+)_/g, "$1");
+    s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    s = s.replace(/https?:\/\/\S+/gi, " ");
+    // never read leftover control words
+    s = s.replace(/\b(voz|tono|music)\s*:\s*\S+/gi, " ");
+    s = s.replace(/[*_#>`~\[\]]/g, " ");
+    return s.replace(/\s+/g, " ").trim();
+  }
+  var ttsSpeaking = false;
+  var micRec = null; // shared one-shot dictation
+  function stopAllMic() {
+    try { if (micRec) { micRec.onend = null; micRec.onerror = null; micRec.stop(); } } catch (e) {}
+    micRec = null;
+    try { if (typeof stopLiveRec === "function") stopLiveRec(); } catch (e2) {}
+    try { if (typeof stopParlantRec === "function") stopParlantRec(); } catch (e3) {}
+    var btn = el("btnMic");
+    if (btn) btn.classList.remove("on");
+  }
+  function whenSpeechEnds(cb) {
+    var n = 0;
+    var id = setInterval(function () {
+      n++;
+      var speaking = false;
+      try { speaking = !!(window.speechSynthesis && window.speechSynthesis.speaking); } catch (e) {}
+      if ((!speaking && !ttsSpeaking) || n > 100) {
+        clearInterval(id);
+        ttsSpeaking = false;
+        if (cb) cb();
+      }
+    }, 200);
+  }
+  function speakText(text, onEnd) {
+    try {
+      if (!window.speechSynthesis) {
+        if (onEnd) onEnd();
+        return;
+      }
+      var clean = speechClean(text);
+      if (!clean) {
+        if (onEnd) onEnd();
+        return;
+      }
+      // stop mics while AI talks — otherwise next user speech is ignored
+      stopAllMic();
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      ttsSpeaking = true;
+      var u = new SpeechSynthesisUtterance(clean.slice(0, 900));
+      u.lang = "es-ES";
+      var tp = toneParams(toneMood || "neutral");
+      u.rate = Math.max(0.85, Math.min(1.15, (tp && tp.rate) || 1));
+      u.pitch = Math.max(0.9, Math.min(1.15, (tp && tp.pitch) || 1));
+      var v = pickVoice();
+      if (v) {
+        try { u.voice = v; if (v.lang) u.lang = v.lang; } catch (e2) {}
+      }
+      var done = function () {
+        ttsSpeaking = false;
+        if (onEnd) {
+          try { onEnd(); } catch (e3) {}
+        }
+      };
+      u.onend = done;
+      u.onerror = done;
+      try { window.speechSynthesis.resume(); } catch (e4) {}
+      window.speechSynthesis.speak(u);
+      // safety if onend never fires (some mobile browsers)
+      setTimeout(function () {
+        if (ttsSpeaking) {
+          var still = false;
+          try { still = window.speechSynthesis.speaking; } catch (e5) {}
+          if (!still) done();
+        }
+      }, Math.min(20000, 1200 + clean.length * 50));
+    } catch (err) {
+      console.warn("speak", err);
+      ttsSpeaking = false;
+      if (onEnd) onEnd();
+    }
+  }
+
+
+  function wantsMusic(text) {
+    var s = String(text || "").trim();
+    if (!s) return false;
+    if (/^\/(?:music|musica|song)\b/i.test(s)) return true;
+    if (/\[\[\s*music\s*:/i.test(s)) return true;
+    // must have an explicit play verb AND a music noun
+    var hasVerb = /\b(pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\b/i.test(s);
+    var hasNoun = /\b(musica|música|cancion|canción|tema|song|track|playlist|album|álbum)\b/i.test(s);
+    return hasVerb && hasNoun;
+  }
+  function extractMusicQuery(text) {
+    var s = String(text || "");
+    var m = s.match(/\[\[\s*music\s*:\s*([^\]]+)\]\]/i) || s.match(/\[\s*music\s*:\s*([^\]]+)\]/i);
+    if (m) return m[1].trim();
+    m = s.match(/^\/(?:music|musica|song)\s+(.+)/i);
+    if (m) return m[1].trim();
+    m = s.match(/\b(?:pon|poner|ponme|reproduce|reproducir|play|toca|tocar)\s+(?:la\s+|el\s+|una\s+|me\s+)?(?:musica|música|cancion|canción|tema|song|track)?\s*(?:de\s+)?(.+)/i);
+    if (m) return m[1].replace(/[?.!]+$/, "").trim();
+    m = s.match(/\b(?:musica|música|cancion|canción)\s+(?:de\s+)?(.+)/i);
+    if (m) return m[1].replace(/[?.!]+$/, "").trim();
+    return "";
+  }
+  function stripMusicTags(text) {
+    return String(text || "")
+      .replace(/\[\[\s*music\s*:\s*[^\]]+\]\]/ig, "")
+      .replace(/\[\s*music\s*:\s*[^\]]+\]/ig, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+  function isDirectAudio(url) {
+    return /\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(String(url || ""));
+  }
+  function youtubeSearchEmbed(query) {
+    return "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(query);
+  }
+  function youtubeSearchLink(query) {
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+  }
+  function unlockAudio() {
+    try {
+      var a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAEYsAAAB3AQACABAAZGF0YQAAAAA=");
+      a.volume = 0.01;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+  function isAndroid() {
+    return /Android/i.test(navigator.userAgent);
+  }
+  function apiBase() {
+    var u = store.get("apiUrl", DEFAULT_API) || DEFAULT_API;
+    return String(u).replace(/\/$/, "");
+  }
+  /** Open YouTube app (or site) on a SPECIFIC video and play */
+  function openYouTubePlay(videoId) {
+    if (!videoId) return false;
+    var web = "https://www.youtube.com/watch?v=" + videoId;
+    try {
+      if (isIOS()) {
+        // YouTube iOS scheme
+        window.location.href = "youtube://www.youtube.com/watch?v=" + videoId;
+        setTimeout(function () { window.open(web, "_blank"); }, 700);
+        return true;
+      }
+      if (isAndroid()) {
+        // Android intent → YouTube app
+        window.location.href =
+          "intent://www.youtube.com/watch?v=" + videoId +
+          "#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=" +
+          encodeURIComponent(web) + ";end";
+        return true;
+      }
+      // Desktop: open watch page (autoplay depends on browser)
+      window.open(web + "&autoplay=1", "_blank");
+      return true;
+    } catch (e) {
+      window.open(web, "_blank");
+      return true;
+    }
+  }
+  /** Open Spotify app on a SPECIFIC track (needs track URI/URL) */
+  function openSpotifyPlay(spotifyUri, spotifyUrl) {
+    var web = spotifyUrl || "https://open.spotify.com/search/";
+    try {
+      if (spotifyUri && /^spotify:track:/.test(spotifyUri)) {
+        // App URI plays the track in Spotify app
+        window.location.href = spotifyUri;
+        setTimeout(function () {
+          if (spotifyUrl) window.open(spotifyUrl, "_blank");
+        }, 800);
+        return true;
+      }
+      if (spotifyUrl && /open\.spotify\.com\/track\//.test(spotifyUrl)) {
+        if (isAndroid()) {
+          window.location.href =
+            "intent://open.spotify.com/track/" + spotifyUrl.split("/track/")[1].split("?")[0] +
+            "#Intent;scheme=https;package=com.spotify.music;S.browser_fallback_url=" +
+            encodeURIComponent(spotifyUrl) + ";end";
+          return true;
+        }
+        window.location.href = spotifyUrl;
+        return true;
+      }
+      // Fallback search in app
+      if (spotifyUri) {
+        window.location.href = spotifyUri;
+        return true;
+      }
+      window.open(web, "_blank");
+      return false;
+    } catch (e) {
+      window.open(web, "_blank");
+      return false;
+    }
+  }
+  function openAppleMusic(url) {
+    if (!url) return;
+    try { window.location.href = url; }
+    catch (e) { window.open(url, "_blank"); }
+  }
+  function resolveMusic(query) {
+    var q = encodeURIComponent(query);
+    var base = apiBase();
+    // Prefer backend (Spotify keys + Piped)
+    return fetch(base + "/api/music-resolve?q=" + q)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && !data.error) return data;
+        throw new Error("backend resolve failed");
+      })
+      .catch(function () {
+        // Client fallback: Piped YouTube only
+        var out = {
+          query: query,
+          title: query,
+          artist: "",
+          art: "",
+          youtubeId: "",
+          spotifyUri: "",
+          spotifyUrl: "https://open.spotify.com/search/" + q,
+          appleUrl: ""
+        };
+        var hosts = [
+          "https://pipedapi.kavin.rocks",
+          "https://pipedapi.adminforge.de",
+          "https://pipedapi.nosebs.ru"
+        ];
+        function tryPiped(i) {
+          if (i >= hosts.length) return Promise.resolve(out);
+          return fetch(hosts[i] + "/search?q=" + q + "&filter=videos")
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var items = Array.isArray(data) ? data : (data.items || data.results || []);
+              for (var k = 0; k < items.length; k++) {
+                var it = items[k];
+                if (!it) continue;
+                var id = it.videoId || it.id || "";
+                if (it.url) {
+                  var m = String(it.url).match(/(?:v=|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
+                  if (m) id = m[1];
+                }
+                id = String(id).replace(/^\/watch\?v=/, "");
+                if (/^[A-Za-z0-9_-]{6,}$/.test(id)) {
+                  out.youtubeId = id;
+                  if (it.title) out.title = it.title;
+                  break;
+                }
+              }
+              if (!out.youtubeId) return tryPiped(i + 1);
+              return out;
+            })
+            .catch(function () { return tryPiped(i + 1); });
+        }
+        return tryPiped(0);
+      });
+  }
+  function buildMusicPlayer(query, autoLaunch) {
+    autoLaunch = !!autoLaunch;
+    var wrap = document.createElement("div");
+    wrap.className = "music-player";
+    var head = document.createElement("div");
+    head.className = "mp-head";
+    var titleEl = document.createElement("span");
+    titleEl.textContent = "🎵 " + query;
+    var stopBtn = document.createElement("button");
+    stopBtn.type = "button";
+    stopBtn.textContent = "Cerrar";
+    stopBtn.onclick = function () { wrap.remove(); hideNowPlaying(); };
+    head.appendChild(titleEl);
+    head.appendChild(stopBtn);
+    wrap.appendChild(head);
+
+    var body = document.createElement("div");
+    body.style.cssText = "padding:12px;display:flex;flex-direction:column;gap:10px";
+    var status = document.createElement("div");
+    status.style.cssText = "font-size:.85rem;color:#c8c8d0";
+    status.textContent = autoLaunch ? "Abriendo app…" : "Listo — toca ▶ para reproducir (no se abre solo).";
+    body.appendChild(status);
+    wrap.appendChild(body);
+
+    resolveMusic(query).then(function (info) {
+      titleEl.textContent = "🎵 " + (info.title || query) + (info.artist ? " — " + info.artist : "");
+
+      function launchSpotify() {
+        openSpotifyPlay(info.spotifyUri, info.spotifyUrl || ("https://open.spotify.com/search/" + encodeURIComponent(query)));
+      }
+      function launchYt() {
+        if (info.youtubeId) openYouTubePlay(info.youtubeId);
+        else window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), "_blank");
+      }
+
+      // ONLY auto-open when this turn the user asked for music
+      if (autoLaunch) {
+        unlockAudio();
+        if (info.spotifyUri || (info.spotifyUrl && /\/track\//.test(String(info.spotifyUrl)))) {
+          launchSpotify();
+          status.textContent = "Spotify…";
+        } else if (info.youtubeId) {
+          launchYt();
+          status.textContent = "YouTube…";
+        } else {
+          launchSpotify();
+          status.textContent = "Spotify search…";
+        }
+      } else {
+        status.textContent = "Toca un botón para reproducir.";
+      }
+
+      var actions = document.createElement("div");
+      actions.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+      function btn(label, color, fn) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.style.cssText = "padding:10px 14px;border-radius:10px;font-size:.85rem;border:0;color:#fff;background:" + color + ";cursor:pointer";
+        b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); unlockAudio(); fn(); };
+        return b;
+      }
+      actions.appendChild(btn("▶ Spotify", "#1DB954", launchSpotify));
+      actions.appendChild(btn("▶ YouTube", "#c00", launchYt));
+      if (info.appleUrl) {
+        actions.appendChild(btn("▶ Apple Music", "#fc3c44", function () { openAppleMusic(info.appleUrl); }));
+      }
+      body.appendChild(actions);
+
+      // now-playing card only when user launches, not on history restore
+      if (autoLaunch) {
+        showNowPlaying(info.title || query, info.spotifyUrl, info.youtubeId ? ("https://www.youtube.com/watch?v=" + info.youtubeId) : "", info.art, info.artist);
+      }
+    }).catch(function () {
+      status.textContent = "No se pudo resolver. Usa los botones.";
+    });
+
+    return wrap;
+  }
+  function hideNowPlaying() {
+    var np = el("nowPlaying");
+    if (np) np.classList.remove("on");
+  }
+  function showNowPlaying(query, spotifyUrl, ytUrl, artUrl, artist) {
+    var np = el("nowPlaying");
+    if (!np) return;
+    np.classList.add("on");
+    el("npTitle").textContent = query || "Música";
+    el("npArtist").textContent = artist || "App";
+    el("npLyrics").textContent = "Reproducción en app (solo si lo pediste).";
+    if (artUrl) el("npArt").src = artUrl;
+    else el("npArt").removeAttribute("src");
+    var sp = el("npSpotify"); if (sp) sp.href = spotifyUrl || "#";
+    var yt = el("npYoutube"); if (yt) yt.href = ytUrl || "#";
+  }
+  function attachMusicToBubble(body, query, autoLaunch) {
+    if (!query || !body) return;
+    body.querySelectorAll(".music-player").forEach(function (n) { n.remove(); });
+    body.appendChild(buildMusicPlayer(query, !!autoLaunch));
+  }
+
+  function setAvatarMusicMode(on) {
+    // mark last assistant avatar
+    var avatars = document.querySelectorAll(".message.assistant .avatar");
+    if (!avatars.length) return;
+    var av = avatars[avatars.length - 1];
+    if (on) {
+      av.classList.add("music-mode");
+      av.textContent = "🎧";
+      av.title = "Modo musica";
+    }
+  }
+
+  function appendMessage(role, text, scroll, imgUrl, musicQuery, autoMusic) {
+    var root = el("chatInner"); if (!root) return;
+    var w = root.querySelector(".welcome"); if (w) w.remove();
+    var wrap = document.createElement("div"); wrap.className = "message " + (role === "user" ? "user" : "assistant");
+    var av = document.createElement("div"); av.className = "avatar"; av.textContent = role === "user" ? "Tu" : "N";
+    var body = document.createElement("div"); body.className = "bubble";
+    if (role === "assistant") {
+      fillRich(body, text);
+      if (imgUrl) { var im = document.createElement("img"); im.className = "gen-img"; im.src = imgUrl; im.alt = "imagen"; body.appendChild(im); }
+      if (musicQuery) attachMusicToBubble(body, musicQuery, false);
+      var tools = document.createElement("div"); tools.className = "msg-tools";
+      var b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Voz"; b1.onclick = function () { speakText(text); };
+      var b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Copiar";
+      b2.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(String(text || "")).then(function () { toast("Copiado"); }); };
+      tools.appendChild(b1); tools.appendChild(b2); body.appendChild(tools);
+    } else {
+      body.textContent = String(text || "");
+      if (imgUrl) { var im2 = document.createElement("img"); im2.className = "msg-thumb"; im2.src = imgUrl; im2.alt = "subida"; body.appendChild(im2); }
+    }
+    wrap.appendChild(av); wrap.appendChild(body); root.appendChild(wrap);
+    if (scroll !== false) { var chat = el("chat"); if (chat) requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; }); }
+  }
+  function renderChat() {
+    var c = current(); var root = el("chatInner"); if (!root) return; root.innerHTML = "";
+    if (!c || !c.messages.length) {
+      root.innerHTML = "<div class=\"welcome\"><div class=\"orb\"></div><h1>Que quieres explorar hoy?</h1><p>Nova " + VERSION + " — chat estable.</p><div class=\"suggestions\"><button type=\"button\" data-prompt=\"Hola Nova\">Hola</button><button type=\"button\" data-prompt=\"Que puedes hacer?\">Capacidades</button><button type=\"button\" data-prompt=\"Explica algo de programacion\">Codigo</button><button type=\"button\" data-prompt=\"Recuerda que prefiero respuestas claras\">Memoria</button></div></div>";
+      root.querySelectorAll("[data-prompt]").forEach(function (b) { b.onclick = function () { send(b.getAttribute("data-prompt")); }; });
+    } else { c.messages.forEach(function (m) { appendMessage(m.role, m.text, false, m.imageUrl || m.imagePreview, m.musicQuery, false); }); }
+    var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight; renderHistory();
+  }
+  var sending = false;
+  function clearPendingImage() {
+    pendingImage = null;
+    var bar = el("attachBar"); if (bar) bar.classList.remove("on");
+    var prev = el("attachPrev"); if (prev) prev.removeAttribute("src");
+  }
+  function setPendingImage(file) {
+    if (!file || !file.type || file.type.indexOf("image/") !== 0) { toast("Solo imagenes"); return; }
+    if (file.size > 4 * 1024 * 1024) { toast("Max 4MB"); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var dataUrl = String(reader.result || "");
+      var comma = dataUrl.indexOf(",");
+      var meta = dataUrl.slice(0, comma);
+      var b64 = dataUrl.slice(comma + 1);
+      var mime = (meta.match(/data:([^;]+)/) || [])[1] || file.type || "image/jpeg";
+      pendingImage = { mimeType: mime, data: b64, preview: dataUrl, name: file.name || "imagen" };
+      var bar = el("attachBar"); if (bar) bar.classList.add("on");
+      var prev = el("attachPrev"); if (prev) prev.src = dataUrl;
+      var nm = el("attachName"); if (nm) nm.textContent = pendingImage.name;
+      toast("Imagen lista — envia con un mensaje");
+    };
+    reader.readAsDataURL(file);
+  }
+  function wantsImageGen(text) {
+    return /\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\b.{0,48}\b(imagen|image|img|foto|picture|dibujo)\b/i.test(text)
+      || /^\/image\b/i.test(text)
+      || /^\/img\b/i.test(text);
+  }
+  async function send(forcedText) {
+    if (sending) return;
+    var promptEl = el("prompt");
+    var text = (forcedText != null ? forcedText : (promptEl ? promptEl.value : "")).trim();
+    if (!text && !pendingImage) return;
+    if (!text) text = "(imagen adjunta)";
+    if (!current()) newChat();
+    var c = current(); if (!c) return;
+
+    sending = true;
+    var sendBtn = el("send"); if (sendBtn) sendBtn.disabled = true;
+
+    var preview = pendingImage ? pendingImage.preview : null;
+    var imgPayload = pendingImage ? { mimeType: pendingImage.mimeType, data: pendingImage.data } : null;
+
+    c.messages.push({ role: "user", text: text, imagePreview: preview || undefined });
+    if (c.messages.filter(function (m) { return m.role === "user"; }).length === 1) {
+      c.title = text.slice(0, 34) + (text.length > 34 ? "..." : "");
+    }
+    c.updated = Date.now();
+    appendMessage("user", text, true, preview);
+    if (promptEl) { promptEl.value = ""; promptEl.style.height = "auto"; }
+    clearPendingImage();
+
+    if (typeof ingestMemoryTags === "function") { try { ingestMemoryTags(text); } catch (e) {} }
+    var rm = text.match(/recuerda que (.+)/i);
+    if (rm) {
+      var note = rm[1].trim().slice(0, 240);
+      if (note && longTerm.indexOf(note) < 0) {
+        longTerm.push(note); store.set("longTerm", longTerm); toast("Guardado en memoria");
+      }
+    }
+
+    
+    // Music intercept — play even if backend is slow
+    var userMusicQ = extractMusicQuery(text);
+    if (!userMusicQ && wantsMusic(text)) {
+      userMusicQ = text.replace(/^\/(?:music|musica|song)\s*/i, "").trim();
+      if (!userMusicQ) userMusicQ = extractMusicQuery(text) || "";
+    }
+    if (userMusicQ || wantsMusic(text)) { try { unlockAudio(); } catch (e) {} }
+
+    document.querySelectorAll(".nova-wait").forEach(function (n) { n.remove(); });
+    var wait = document.createElement("div");
+    wait.className = "message assistant nova-wait";
+    wait.innerHTML = "<div class=\"avatar\">N</div><div class=\"bubble typing\"><span class=\"typing-dots\"><span></span><span></span><span></span></span> escribiendo…</div>";
+    var root = el("chatInner"); if (root) root.appendChild(wait);
+    var chat = el("chat"); if (chat) chat.scrollTop = chat.scrollHeight;
+
+    var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+
+    // Image generation — Pollinations with safer params + backend fallback
+    if (wantsImageGen(text) && !imgPayload) {
+      try {
+        var imgPrompt = text
+          .replace(/^\/(image|img)\s*/i, "")
+          .replace(/\b(genera|generar|crea|crear|dibuja|dibujar|make|generate)\s+(una\s+)?(imagen|image|foto|picture|dibujo)?\s*(de|of)?\s*/i, "")
+          .replace(/[^\w\s\u00C0-\u024F.,!?+\-']/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!imgPrompt || imgPrompt.length < 2) imgPrompt = "beautiful landscape, soft light, detailed";
+        // Soften / expand short prompts so filters are less twitchy
+        if (imgPrompt.length < 12) imgPrompt = imgPrompt + ", high quality, detailed, aesthetic";
+
+        var outUrl = null;
+        // 1) backend /api/image if online
+        try {
+          var ir = await fetch(url + "/api/image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: imgPrompt })
+          });
+          var idata = await ir.json().catch(function () { return {}; });
+          if (ir.ok && idata.imageUrl) outUrl = idata.imageUrl;
+        } catch (_e) {}
+
+        // 2) direct Pollinations — flux model, nologo, no weird seed
+        if (!outUrl) {
+          outUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imgPrompt)
+            + "?model=flux&width=768&height=768&nologo=true&enhance=true&safe=false";
+        }
+
+        // 3) probe: if the image is the pink "refused" card, try alternate model once
+        try {
+          var probe = await fetch(outUrl, { method: "GET", mode: "cors" });
+          // can't read pixels easily; alternate URL if first looks wrong
+        } catch (_e2) {}
+
+        // Always offer a second candidate URL for hard refreshes
+        var altUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imgPrompt + ", cinematic lighting")
+          + "?model=flux&width=768&height=768&nologo=true";
+
+        var answer = "Imagen: " + imgPrompt;
+        c.messages.push({ role: "assistant", text: answer, imageUrl: outUrl });
+        saveChats();
+        if (wait.parentNode) wait.remove();
+        appendMessage("assistant", answer, true, outUrl);
+
+        // If user still sees refused, show retry tip in tools area via toast
+        toast("Si sale 'refused', reenvía con más detalle en inglés o español claro");
+
+        // soft secondary: also keep alt in message text as link
+        // (visible if primary fails)
+        if (autoSpeak) speakText("Imagen lista");
+        sending = false; if (sendBtn) sendBtn.disabled = false; renderHistory();
+        return;
+      } catch (e) { /* fall through to normal chat */ }
+    }
+
+    try {
+      var payload = {
+        messages: c.messages.slice(-16).map(function (m) { return { role: m.role, content: m.text }; }),
+        memories: [],
+        longTerm: (typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-40)),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: true,
+        useGoogleSearch: true,
+        image: imgPayload
+      };
+      var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 90000) : null;
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      if (timer) clearTimeout(timer);
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var rawAnswer = String(data.reply || "Sin respuesta");
+      var musicQ = extractMusicQuery(rawAnswer);
+      var answer = stripMusicTags(stripVoiceDirectives(rawAnswer));
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      if (typeof ingestMemoryTags === "function") answer = ingestMemoryTags(answer);
+      var outImg = data.imageUrl || null;
+      // STRICT: music UI only if THIS user message explicitly asked to play music
+      var userAskedMusic = wantsMusic(text) || !!(userMusicQ && String(userMusicQ).length > 1);
+      var finalMusic = userAskedMusic ? String(userMusicQ || musicQ || "").trim() : "";
+      if (!userAskedMusic) { musicQ = ""; finalMusic = ""; }
+      c.messages.push({ role: "assistant", text: answer, imageUrl: outImg || undefined, musicQuery: finalMusic || undefined });
+      saveChats();
+      if (wait.parentNode) wait.remove();
+      appendMessage("assistant", answer, true, outImg, finalMusic || null, false);
+      // never auto-open Spotify/YT — user must press ▶
+      if (finalMusic) { try { setAvatarExpression("music"); } catch (e) {} }
+      // Auto tasks from assistant/user text
+      try {
+        extractTasksFromText(text).forEach(addTask);
+        extractTasksFromText(answer).forEach(addTask);
+      } catch (e) {}
+      // Maps card when user asked for place/route
+      if (wantsMaps(text)) {
+        var place = extractPlace(text) || text;
+        var mapLink = mapsUrl(place);
+        answer = answer + "\n\n🗺️ Mapa: " + mapLink;
+        // re-append link into last bubble if needed — soft: speak unchanged
+        var lastBub = document.querySelector(".message.assistant:last-child .bubble");
+        if (lastBub && !/google\.com\/maps/.test(lastBub.textContent || "")) {
+          var a = document.createElement("a");
+          a.href = mapLink; a.target = "_blank"; a.rel = "noopener"; a.textContent = "🗺️ Abrir en Google Maps";
+          a.style.cssText = "display:inline-block;margin-top:8px;color:#4f46e5";
+          lastBub.appendChild(document.createElement("br"));
+          lastBub.appendChild(a);
+        }
+      }
+      try { setAvatarExpression(exprFromTone(toneMood)); } catch (e) {}
+      if (autoSpeak) speakText(answer);
+    } catch (err) {
+      if (wait.parentNode) wait.remove();
+      var msg = (err && err.name === "AbortError")
+        ? "Tiempo agotado. Reintenta en 20s."
+        : ("Error: " + (err && err.message ? err.message : err) + " · " + url);
+      c.messages.push({ role: "assistant", text: msg });
+      saveChats();
+      appendMessage("assistant", msg, true);
+      toast(String(msg).slice(0, 60));
+    } finally {
+      sending = false;
+      if (sendBtn) sendBtn.disabled = false;
+      renderHistory();
+    }
+  }
+
+  function openModal(id) { var m = el(id); if (m) m.classList.add("open"); if (id === "memoryModal") { renderLt(); try { renderTasks(); } catch (e) {} } if (id === "settingsModal") { el("apiUrl").value = store.get("apiUrl", DEFAULT_API) || DEFAULT_API; el("values").value = settings.values || ""; el("selfNote").value = settings.selfNote || ""; el("optSpeak").checked = autoSpeak; var tm = el("toneMood"); if (tm) tm.value = toneMood || "neutral"; var vt = el("voiceType"); if (vt) vt.value = voiceType || "auto"; populateVoiceSelect(); var vn = el("voiceName"); if (vn) vn.value = voiceName || ""; } }
+  function closeModal(id) { var m = el(id); if (m) m.classList.remove("open"); }
+  function renderTasks() {
+    var list = el("taskList"); if (!list) return;
+    list.innerHTML = "";
+    if (!tasks.length) { list.textContent = "Sin tareas."; list.style.color = "var(--muted)"; return; }
+    list.style.color = "";
+    tasks.slice().reverse().forEach(function (task, idx) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)";
+      var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!task.done;
+      cb.onchange = function () { task.done = cb.checked; saveTasks(); };
+      var s = document.createElement("span"); s.textContent = task.text; s.style.flex = "1";
+      if (task.done) s.style.textDecoration = "line-through";
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "X";
+      b.onclick = function () { tasks = tasks.filter(function (x) { return x.id !== task.id; }); saveTasks(); renderTasks(); };
+      row.appendChild(cb); row.appendChild(s); row.appendChild(b); list.appendChild(row);
+    });
+  }
+  function renderLt() {
+    try { renderTasks(); } catch (e) {}
+ var list = el("ltList"); if (!list) return; list.innerHTML = ""; if (!longTerm.length) { list.textContent = "Sin notas."; list.style.color = "var(--muted)"; return; } longTerm.forEach(function (note, i) { var row = document.createElement("div"); row.style.cssText = "display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"; var s = document.createElement("span"); s.textContent = note; var b = document.createElement("button"); b.type = "button"; b.textContent = "X"; b.onclick = function () { longTerm.splice(i, 1); store.set("longTerm", longTerm); renderLt(); }; row.appendChild(s); row.appendChild(b); list.appendChild(row); }); }
+  function dictationOnce() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Dictado no disponible"); return; }
+    if (ttsSpeaking || (window.speechSynthesis && window.speechSynthesis.speaking)) {
+      toast("Espera a que Nova termine de hablar");
+      return;
+    }
+    stopAllMic();
+    var btn = el("btnMic");
+    try {
+      var rec = new SR();
+      micRec = rec;
+      rec.lang = "es-ES";
+      rec.interimResults = true;
+      rec.continuous = false;
+      if (btn) btn.classList.add("on");
+      toast("Habla ahora…");
+      var finalText = "";
+      rec.onresult = function (ev) {
+        var said = "";
+        for (var i = 0; i < ev.results.length; i++) {
+          said += ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) finalText = said;
+        }
+        var p = el("prompt");
+        if (p) p.value = (finalText || said).trim();
+      };
+      rec.onerror = function (ev) {
+        console.warn("mic", ev);
+        if (btn) btn.classList.remove("on");
+        micRec = null;
+        var err = (ev && ev.error) || "";
+        if (err === "not-allowed") toast("Permiso de mic denegado");
+        else if (err === "no-speech") toast("No se oyó nada — prueba de nuevo");
+        else toast("Mic: " + err);
+      };
+      rec.onend = function () {
+        if (btn) btn.classList.remove("on");
+        micRec = null;
+        var p = el("prompt");
+        if (p && p.value.trim()) toast("Listo — toca enviar");
+      };
+      rec.start();
+    } catch (e) {
+      toast("No se pudo usar el mic");
+      if (btn) btn.classList.remove("on");
+      micRec = null;
+    }
+  }
+
+
+  // ——— Parlante / Hey Nova (uses default mic + speaker; Bluetooth if OS-routed) ———
+  var parlantOn = false;
+  var parlantRec = null;
+  var parlantBusy = false; // speaking or processing
+  var wakeHeard = false;
+
+  function isWake(text) {
+    var s = String(text || "").toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return /\b(hey\s*nova|ey\s*nova|ei\s*nova|ok\s*nova|hola\s*nova|oye\s*nova)\b/.test(s);
+  }
+  function stripWake(text) {
+    return String(text || "")
+      .replace(/\b(hey|ey|ei|ok|hola|oye)\s*nova[,!.]?\s*/ig, "")
+      .trim();
+  }
+  function setParlantUI(listening) {
+    var btn = el("btnParlant");
+    var ban = el("parlantBanner");
+    if (btn) {
+      btn.classList.toggle("on", parlantOn);
+      btn.classList.toggle("listening", !!listening);
+    }
+    if (ban) {
+      ban.style.display = parlantOn ? "block" : "none";
+      if (parlantOn) {
+        ban.innerHTML = listening
+          ? (wakeHeard ? "🎤 Te escucho… habla tu pedido" : "🔊 Di <b>Hey Nova</b> + pedido")
+          : "🔊 Parlante ON — di <b>Hey Nova</b>";
+      }
+    }
+  }
+  function stopParlantRec() {
+    try { if (parlantRec) { parlantRec.onend = null; parlantRec.stop(); } } catch (e) {}
+    parlantRec = null;
+  }
+  function startParlantListen() {
+    if (!parlantOn || parlantBusy) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Parlante necesita Chrome/Edge"); parlantOn = false; setParlantUI(false); return; }
+    stopParlantRec();
+    try {
+      var rec = new SR();
+      parlantRec = rec;
+      rec.lang = "es-ES";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onstart = function () { setParlantUI(true); };
+      rec.onresult = function (ev) {
+        if (parlantBusy) return;
+        var finalTxt = "";
+        for (var i = ev.resultIndex; i < ev.results.length; i++) {
+          if (ev.results[i].isFinal) finalTxt += ev.results[i][0].transcript;
+        }
+        finalTxt = finalTxt.trim();
+        if (!finalTxt) return;
+
+        if (!wakeHeard) {
+          if (isWake(finalTxt)) {
+            wakeHeard = true;
+            setParlantUI(true);
+            var rest = stripWake(finalTxt);
+            try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+            if (rest.length > 1) {
+              handleParlantCommand(rest);
+            } else {
+              toast("Te escucho…");
+              speakText("Dime");
+            }
+          }
+          return;
+        }
+        // already woke — take the next final phrase as command
+        handleParlantCommand(stripWake(finalTxt) || finalTxt);
+      };
+      rec.onerror = function (ev) {
+        var err = (ev && ev.error) || "";
+        if (err === "not-allowed") {
+          toast("Permite el microfono");
+          parlantOn = false; setParlantUI(false);
+        }
+      };
+      rec.onend = function () {
+        parlantRec = null;
+        if (parlantOn && !parlantBusy) setTimeout(startParlantListen, 280);
+        else setParlantUI(false);
+      };
+      rec.start();
+    } catch (e) {
+      toast("No se pudo iniciar el parlante");
+      parlantOn = false; setParlantUI(false);
+    }
+  }
+  function waitSpeechEnd(cb) {
+    var n = 0;
+    var tmr = setInterval(function () {
+      n++;
+      var speaking = false;
+      try { speaking = window.speechSynthesis && window.speechSynthesis.speaking; } catch (e) {}
+      if (!speaking || n > 80) {
+        clearInterval(tmr);
+        if (cb) cb();
+      }
+    }, 250);
+  }
+  function handleParlantCommand(cmd) {
+    cmd = String(cmd || "").trim();
+    if (!cmd) return;
+    wakeHeard = false;
+    parlantBusy = true;
+    stopParlantRec();
+    setParlantUI(false);
+    autoSpeak = true;
+    Promise.resolve(send(cmd)).then(function () {
+      waitSpeechEnd(function () {
+        parlantBusy = false;
+        if (parlantOn) startParlantListen();
+      });
+    }).catch(function () {
+      parlantBusy = false;
+      if (parlantOn) startParlantListen();
+    });
+  }
+  function toggleParlant() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Usa Chrome o Edge para Hey Nova"); return; }
+    if (parlantOn) {
+      parlantOn = false;
+      wakeHeard = false;
+      parlantBusy = false;
+      stopParlantRec();
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+      setParlantUI(false);
+      toast("Parlante OFF");
+      return;
+    }
+    parlantOn = true;
+    autoSpeak = true;
+    store.set("autoSpeak", true);
+    wakeHeard = false;
+    parlantBusy = false;
+    toast("Parlante ON — di Hey Nova");
+    setParlantUI(true);
+    speakText("Nova lista. Di hey nova.");
+    waitSpeechEnd(function () {
+      if (parlantOn) startParlantListen();
+    });
+  }
+
+
+  // ——— 3D / expressive avatar ———
+  var avatarExpr = store.get("avatarExpr", "neutral") || "neutral";
+  var avatarVisible = false;
+  var avatarRaf = 0;
+  var avatarThree = null; // {renderer,scene,camera,head,body,leftEye,rightEye,mouth,t}
+
+  var EXPR_FACE = {
+    neutral: "🙂",
+    happy: "😄",
+    sad: "😢",
+    think: "🤔",
+    music: "🎧",
+    love: "🥰",
+    excited: "🤩",
+    angry: "😠",
+    calm: "😌"
+  };
+  function exprFromTone(mood) {
+    var map = { happy: "happy", excited: "excited", sad: "sad", angry: "angry", calm: "calm", playful: "happy", serious: "think", neutral: "neutral" };
+    return map[mood] || "neutral";
+  }
+  function setAvatarExpression(expr, show) {
+    expr = String(expr || "neutral").toLowerCase();
+    if (/alegre|feliz|happy|joy/.test(expr)) expr = "happy";
+    else if (/triste|sad/.test(expr)) expr = "sad";
+    else if (/pens|think/.test(expr)) expr = "think";
+    else if (/music|musica|música|dj/.test(expr)) expr = "music";
+    else if (/amor|love|cariño|carino/.test(expr)) expr = "love";
+    else if (/emocion|excited|hype/.test(expr)) expr = "excited";
+    else if (/enoj|angry/.test(expr)) expr = "angry";
+    else if (/suave|calm/.test(expr)) expr = "calm";
+    else if (/neutral|normal/.test(expr)) expr = "neutral";
+    else if (!EXPR_FACE[expr]) expr = "neutral";
+    avatarExpr = expr;
+    store.set("avatarExpr", expr);
+    var face = el("avatarFace");
+    if (face) face.textContent = EXPR_FACE[expr] || "🙂";
+    var st = el("avatarStatus");
+    if (st) st.textContent = "Expresión: " + expr;
+    document.querySelectorAll(".avatar-controls [data-expr]").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-expr") === expr);
+    });
+    applyAvatarMeshExpr(expr);
+    if (show && typeof openAvatarPanel === "function") openAvatarPanel();
+  }
+  function applyAvatarMeshExpr(expr) {
+    if (!avatarThree || !avatarThree.mouth) return;
+    var mouth = avatarThree.mouth;
+    var head = avatarThree.head;
+    if (expr === "happy" || expr === "love" || expr === "excited") {
+      mouth.scale.set(1.25, 0.45, 0.55);
+      mouth.position.set(0, 1.48, 0.23);
+      if (head) head.material.color.setHex(0xf5c6a5);
+    } else if (expr === "sad") {
+      mouth.scale.set(0.85, 0.28, 0.5);
+      mouth.position.set(0, 1.46, 0.23);
+      if (head) head.material.color.setHex(0xe8b89a);
+    } else if (expr === "think") {
+      mouth.scale.set(0.45, 0.3, 0.45);
+      mouth.position.set(0, 1.49, 0.23);
+    } else if (expr === "music") {
+      mouth.scale.set(1.15, 0.42, 0.55);
+      if (head) head.material.color.setHex(0xf0c8ff);
+      if (avatarThree.hp) avatarThree.hp.visible = true;
+    } else {
+      mouth.scale.set(1, 0.35, 0.5);
+      mouth.position.set(0, 1.48, 0.23);
+      if (head) head.material.color.setHex(0xf0c29a);
+      if (avatarThree.hp) avatarThree.hp.visible = false;
+    }
+  }
+
+  function loadThree(cb) {
+    if (window.THREE) { cb(); return; }
+    var s = document.createElement("script");
+    s.src = "https://unpkg.com/three@0.160.0/build/three.min.js";
+    s.onload = function () { cb(); };
+    s.onerror = function () { cb(new Error("three")); };
+    document.head.appendChild(s);
+  }
+  function initAvatar3D() {
+    var stage = el("avatarStage");
+    if (!stage || !window.THREE) return false;
+    var fb = el("avatarFallback");
+    try {
+      // clear old canvas
+      stage.querySelectorAll("canvas").forEach(function (c) { c.remove(); });
+      var w = stage.clientWidth || 360;
+      var h = stage.clientHeight || 420;
+      var THREE = window.THREE;
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      camera.position.set(0, 1.0, 3.2);
+      camera.lookAt(0, 0.85, 0);
+      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      stage.appendChild(renderer.domElement);
+      if (fb) fb.style.display = "none";
+
+      var hemi = new THREE.HemisphereLight(0xb8c0ff, 0x222233, 0.9);
+      scene.add(hemi);
+      var key = new THREE.DirectionalLight(0xffffff, 1.05);
+      key.position.set(2.5, 5, 3);
+      scene.add(key);
+      var fill = new THREE.DirectionalLight(0x8866ff, 0.35);
+      fill.position.set(-3, 2, -1);
+      scene.add(fill);
+
+      // floor disc
+      var floor = new THREE.Mesh(
+        new THREE.CircleGeometry(1.2, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1a1d2e, metalness: 0.2, roughness: 0.8 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0;
+      scene.add(floor);
+
+      var skin = new THREE.MeshStandardMaterial({ color: 0xf0c29a, roughness: 0.55, metalness: 0.05 });
+      var cloth = new THREE.MeshStandardMaterial({ color: 0x7c6cf0, roughness: 0.45, metalness: 0.15 });
+      var clothDark = new THREE.MeshStandardMaterial({ color: 0x4a3fb0, roughness: 0.5, metalness: 0.1 });
+      var hairMat = new THREE.MeshStandardMaterial({ color: 0x2b2244, roughness: 0.7 });
+      var eyeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22 });
+      var mouthMat = new THREE.MeshStandardMaterial({ color: 0xc45c6a });
+
+      var root = new THREE.Group();
+      scene.add(root);
+
+      // legs
+      var legGeo = new THREE.CapsuleGeometry(0.11, 0.45, 4, 10);
+      var leftLeg = new THREE.Mesh(legGeo, clothDark);
+      leftLeg.position.set(-0.14, 0.35, 0);
+      var rightLeg = new THREE.Mesh(legGeo, clothDark);
+      rightLeg.position.set(0.14, 0.35, 0);
+      root.add(leftLeg);
+      root.add(rightLeg);
+
+      // torso
+      var torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.4, 6, 14), cloth);
+      torso.position.y = 0.95;
+      root.add(torso);
+
+      // arms
+      var armGeo = new THREE.CapsuleGeometry(0.08, 0.38, 4, 10);
+      var leftArm = new THREE.Mesh(armGeo, skin);
+      leftArm.position.set(-0.42, 1.0, 0);
+      leftArm.rotation.z = 0.25;
+      var rightArm = new THREE.Mesh(armGeo, skin);
+      rightArm.position.set(0.42, 1.0, 0);
+      rightArm.rotation.z = -0.25;
+      root.add(leftArm);
+      root.add(rightArm);
+
+      // neck
+      var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.12, 12), skin);
+      neck.position.y = 1.35;
+      root.add(neck);
+
+      // head
+      var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 32, 32), skin);
+      head.position.y = 1.58;
+      root.add(head);
+
+      // hair
+      var hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 24, 24), hairMat);
+      hair.scale.set(1.05, 0.7, 1.05);
+      hair.position.set(0, 1.72, -0.02);
+      root.add(hair);
+
+      // eyes
+      var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), eyeMat);
+      leftEye.position.set(-0.09, 1.62, 0.22);
+      var rightEye = leftEye.clone();
+      rightEye.position.x = 0.09;
+      root.add(leftEye);
+      root.add(rightEye);
+
+      // mouth
+      var mouth = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), mouthMat);
+      mouth.scale.set(1, 0.35, 0.5);
+      mouth.position.set(0, 1.48, 0.23);
+      root.add(mouth);
+
+      // headphones
+      var hp = new THREE.Mesh(
+        new THREE.TorusGeometry(0.28, 0.035, 8, 28),
+        new THREE.MeshStandardMaterial({ color: 0x333355, metalness: 0.4, roughness: 0.4 })
+      );
+      hp.rotation.x = Math.PI / 2;
+      hp.position.y = 1.58;
+      hp.visible = false;
+      root.add(hp);
+
+      avatarThree = {
+        renderer: renderer, scene: scene, camera: camera, root: root,
+        head: head, torso: torso, leftArm: leftArm, rightArm: rightArm,
+        leftLeg: leftLeg, rightLeg: rightLeg, leftEye: leftEye, rightEye: rightEye,
+        mouth: mouth, hp: hp, t: 0
+      };
+      applyAvatarMeshExpr(avatarExpr);
+
+      function tick() {
+        if (!avatarVisible || !avatarThree) return;
+        avatarThree.t += 0.016;
+        var tm = avatarThree.t;
+        // idle: breathe + slight sway + weight shift
+        root.rotation.y = Math.sin(tm * 0.6) * 0.18;
+        torso.scale.y = 1 + Math.sin(tm * 2.2) * 0.015;
+        head.rotation.y = Math.sin(tm * 0.9) * 0.12;
+        head.rotation.z = Math.sin(tm * 1.1) * 0.03;
+        leftArm.rotation.x = Math.sin(tm * 1.3) * 0.08;
+        rightArm.rotation.x = Math.sin(tm * 1.3 + 1) * 0.08;
+        leftLeg.rotation.x = Math.sin(tm * 0.7) * 0.04;
+        rightLeg.rotation.x = Math.sin(tm * 0.7 + 1.5) * 0.04;
+        avatarThree.hp.visible = avatarExpr === "music";
+        renderer.render(scene, camera);
+        avatarRaf = requestAnimationFrame(tick);
+      }
+      cancelAnimationFrame(avatarRaf);
+      tick();
+      return true;
+    } catch (e) {
+      console.warn("avatar3d", e);
+      if (fb) fb.style.display = "flex";
+      return false;
+    }
+  }
+  function openAvatarPanel() {
+    var p = el("avatarPanel");
+    if (!p) return;
+    p.classList.add("on");
+    avatarVisible = true;
+    setAvatarExpression(avatarExpr || exprFromTone(toneMood));
+    loadThree(function (err) {
+      if (err || !window.THREE) {
+        var fb = el("avatarFallback");
+        if (fb) fb.style.display = "flex";
+        return;
+      }
+      cancelAnimationFrame(avatarRaf);
+      avatarThree = null;
+      initAvatar3D();
+    });
+  }
+  function closeAvatarPanel() {
+    avatarVisible = false;
+    cancelAnimationFrame(avatarRaf);
+    var p = el("avatarPanel");
+    if (p) p.classList.remove("on");
+  }
+  function toggleAvatarPanel() {
+    var p = el("avatarPanel");
+    if (p && p.classList.contains("on")) closeAvatarPanel();
+    else openAvatarPanel();
+  }
+  // Parse [[avatar:happy]] from AI text
+  function stripAvatarTags(text) {
+    var out = String(text || "");
+    out = out.replace(/\[\[\s*avatar\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      setAvatarExpression(v.trim(), true);
+      return "";
+    });
+    out = out.replace(/\[\s*avatar\s*:\s*([^\]]+)\]/gi, function (_, v) {
+      setAvatarExpression(v.trim(), true);
+      return "";
+    });
+    return out;
+  }
+
+
+  function saveProfile() { store.set("profile", profile); }
+  function saveAuth() { store.set("authUser", authUser); }
+  function isSignedIn() { return !!(authUser && authUser.id); }
+  function displayName() {
+    if (authUser && authUser.name) return authUser.name;
+    if (profile && profile.name) return profile.name;
+    return "";
+  }
+  function refreshAuthUI() {
+    var out = el("authSignedOut");
+    var inn = el("authSignedIn");
+    if (!out || !inn) return;
+    if (isSignedIn() || (profile && profile.name)) {
+      out.style.display = "none";
+      inn.style.display = "block";
+      el("authUserName").textContent = displayName() || "Usuario";
+      el("authUserEmail").textContent = (authUser && authUser.email) || (authUser && authUser.provider) || "Perfil local";
+    } else {
+      out.style.display = "block";
+      inn.style.display = "none";
+    }
+  }
+  function signInLocal() {
+    var name = (el("authLocalName") && el("authLocalName").value || "").trim() || "Usuario";
+    authUser = { id: "local-" + Date.now(), name: name, provider: "local", email: "" };
+    profile.name = name;
+    saveAuth(); saveProfile();
+    if (longTerm.indexOf("Me llamo " + name) < 0) longTerm.push("Me llamo " + name);
+    store.set("longTerm", longTerm);
+    refreshAuthUI();
+    toast("Perfil local guardado");
+    closeModal("authModal");
+  }
+  function signOut() {
+    authUser = null;
+    saveAuth();
+    refreshAuthUI();
+    toast("Sesión cerrada");
+  }
+  // OAuth via backend (Google / GitHub)
+  function startOAuth(provider) {
+    var base = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+    var redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+    window.location.href = base + "/api/auth/" + provider + "?redirect=" + redirect;
+  }
+  function consumeAuthCallback() {
+    try {
+      var hash = window.location.hash || "";
+      var q = window.location.search || "";
+      var m = hash.match(/auth=([^&]+)/) || q.match(/[?&]auth=([^&]+)/);
+      if (!m) return;
+      var raw = decodeURIComponent(m[1]);
+      var data = JSON.parse(atob(raw));
+      if (data && data.id) {
+        authUser = data;
+        profile.name = data.name || profile.name;
+        saveAuth(); saveProfile();
+        if (data.name && longTerm.indexOf("Me llamo " + data.name) < 0) {
+          longTerm.push("Me llamo " + data.name);
+          store.set("longTerm", longTerm);
+        }
+        toast("Hola, " + (data.name || "usuario"));
+      }
+      // clean URL
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    } catch (e) { console.warn("auth callback", e); }
+  }
+  // Pre-known memory tags from AI or user
+  function ingestMemoryTags(text) {
+    var out = String(text || "");
+    // [[memoria:…]] or [[recall:…]]
+    out = out.replace(/\[\[\s*(?:memoria|memory|recall|know)\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      var note = v.trim().slice(0, 240);
+      if (note && longTerm.indexOf(note) < 0) {
+        longTerm.push(note);
+        store.set("longTerm", longTerm);
+        toast("Memoria: " + note.slice(0, 40));
+      }
+      return "";
+    });
+    // [[like:…]] preferences
+    out = out.replace(/\[\[\s*(?:like|gusto|pref)\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      var like = v.trim().slice(0, 80);
+      if (!profile.likes) profile.likes = [];
+      if (like && profile.likes.indexOf(like) < 0) {
+        profile.likes.push(like);
+        saveProfile();
+        var n = "Le gusta: " + like;
+        if (longTerm.indexOf(n) < 0) { longTerm.push(n); store.set("longTerm", longTerm); }
+      }
+      return "";
+    });
+    // [[name:…]]
+    out = out.replace(/\[\[\s*name\s*:\s*([^\]]+)\]\]/gi, function (_, v) {
+      profile.name = v.trim().slice(0, 60);
+      saveProfile();
+      return "";
+    });
+    return out.replace(/\s{2,}/g, " ").trim();
+  }
+  function buildMemoryPayload() {
+    var bits = longTerm.slice(-50);
+    if (profile.name) bits.unshift("Nombre del usuario: " + profile.name);
+    if (authUser && authUser.provider) bits.unshift("Cuenta: " + authUser.provider + (authUser.email ? " (" + authUser.email + ")" : ""));
+    if (profile.likes && profile.likes.length) bits.push("Gustos: " + profile.likes.slice(-20).join(", "));
+    if (tasks && tasks.length) {
+      var open = tasks.filter(function (x) { return !x.done; }).slice(-10).map(function (x) { return x.text; });
+      if (open.length) bits.push("Tareas abiertas: " + open.join("; "));
+    }
+    bits.push("Avatar 3D activo. Expresiones con [[avatar:happy|sad|think|music|love|neutral|excited|angry|calm]].");
+    bits.push("Memoria nueva con [[memoria:hecho]] [[like:gusto]] [[name:nombre]].");
+    return bits;
+  }
+
+
+  // ——— Live camera + Call mode ———
+  var liveMode = null; // "camera" | "call" | null
+  var liveStream = null;
+  var liveFacing = "environment";
+  var liveRec = null;
+  var liveBusy = false;
+  var liveCamOn = true;
+  var liveMicOn = true;
+
+  function setLiveCaption(text) {
+    var c = el("liveCaption");
+    if (!c) return;
+    if (!text) { c.style.display = "none"; c.textContent = ""; return; }
+    c.style.display = "block";
+    c.textContent = text;
+  }
+  function setCallStatus(text) {
+    var s = el("callStatus");
+    if (s) s.textContent = text || "";
+  }
+  function setOrbState(state) {
+    var orb = el("callOrb");
+    if (!orb) return;
+    orb.classList.remove("listening", "speaking");
+    if (state) orb.classList.add(state);
+  }
+  async function startLiveStream(facing) {
+    stopLiveStream();
+    facing = facing || liveFacing;
+    var constraints = {
+      audio: false,
+      video: {
+        facingMode: { ideal: facing },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    try {
+      liveStream = await navigator.mediaDevices.getUserMedia(constraints);
+      var v = el("liveVideo");
+      if (v) {
+        v.srcObject = liveStream;
+        v.muted = true;
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+      liveFacing = facing;
+      liveCamOn = true;
+      return true;
+    } catch (e) {
+      console.warn(e);
+      toast("No se pudo abrir la cámara");
+      return false;
+    }
+  }
+  function stopLiveStream() {
+    if (liveStream) {
+      liveStream.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) {} });
+      liveStream = null;
+    }
+    var v = el("liveVideo");
+    if (v) v.srcObject = null;
+  }
+  function captureLiveFrame() {
+    var v = el("liveVideo");
+    if (!v || !v.videoWidth) return null;
+    var canvas = document.createElement("canvas");
+    var maxW = 960;
+    var scale = Math.min(1, maxW / v.videoWidth);
+    canvas.width = Math.round(v.videoWidth * scale);
+    canvas.height = Math.round(v.videoHeight * scale);
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    var dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    var comma = dataUrl.indexOf(",");
+    return {
+      mimeType: "image/jpeg",
+      data: dataUrl.slice(comma + 1),
+      preview: dataUrl
+    };
+  }
+  async function analyzeLiveFrame(promptText) {
+    if (liveBusy) return;
+    var frame = captureLiveFrame();
+    if (!frame) {
+      toast("Sin imagen de cámara");
+      return;
+    }
+    liveBusy = true;
+    setLiveCaption("Mirando…");
+    setCallStatus("Nova está viendo…");
+    try {
+      var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+      var payload = {
+        messages: [
+          { role: "user", content: promptText || "Esto es un FRAME EN VIVO de mi cámara ahora mismo (no es una foto guardada). Describe lo que ves en este instante de forma natural y breve. Si hay texto, léelo." }
+        ],
+        memories: [],
+        longTerm: typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-20),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: false,
+        image: { mimeType: frame.mimeType, data: frame.data }
+      };
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var answer = String(data.reply || "No veo bien.");
+      if (typeof stripVoiceDirectives === "function") answer = stripVoiceDirectives(answer);
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      setLiveCaption(answer);
+      setCallStatus(answer.slice(0, 120));
+      // also push into main chat lightly
+      if (!current()) newChat();
+      var c = current();
+      if (c) {
+        c.messages.push({ role: "user", text: promptText || "(cámara en vivo)", imagePreview: frame.preview });
+        c.messages.push({ role: "assistant", text: answer });
+        c.updated = Date.now();
+        saveChats();
+      }
+      setOrbState("speaking");
+      speakText(answer, function () {
+        setOrbState(liveMicOn ? "listening" : "");
+        if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 300);
+      });
+    } catch (e) {
+      setLiveCaption("Error: " + (e.message || e));
+      toast("Error de visión");
+    } finally {
+      liveBusy = false;
+    }
+  }
+  function stopLiveRec() {
+    try { if (liveRec) { liveRec.onend = null; liveRec.stop(); } } catch (e) {}
+    liveRec = null;
+  }
+  function startLiveListen() {
+    if (!liveMicOn || liveMode !== "call" || liveBusy || ttsSpeaking) return;
+    if (window.speechSynthesis && window.speechSynthesis.speaking) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setCallStatus("Dictado no disponible en este navegador"); return; }
+    stopLiveRec();
+    try {
+      var rec = new SR();
+      liveRec = rec;
+      rec.lang = "es-ES";
+      rec.continuous = false;
+      rec.interimResults = false;
+      setOrbState("listening");
+      setCallStatus("Te escucho…");
+      rec.onresult = function (ev) {
+        var said = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript || "").trim();
+        if (!said) return;
+        setCallStatus("Tú: " + said);
+        handleCallUtterance(said);
+      };
+      rec.onerror = function () {
+        setOrbState("");
+        if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 600);
+      };
+      rec.onend = function () {
+        liveRec = null;
+        if (liveMode === "call" && liveMicOn && !liveBusy) setTimeout(startLiveListen, 400);
+      };
+      rec.start();
+    } catch (e) {
+      setCallStatus("No se pudo usar el mic");
+    }
+  }
+  async function handleCallUtterance(said) {
+    if (liveBusy) return;
+    liveBusy = true;
+    stopLiveRec();
+    setOrbState("");
+    setCallStatus("Pensando…");
+    try {
+      // If camera on in call, attach frame
+      var frame = captureLiveFrame(); // videollamada: siempre frame en vivo si hay cámara
+      var url = (store.get("apiUrl", DEFAULT_API) || DEFAULT_API).replace(/\/$/, "");
+      var liveNote = frame
+        ? "[Videollamada en vivo — frame de cámara en este instante, NO una foto antigua]\n" + said
+        : said;
+      var msgs = [{ role: "user", content: liveNote }];
+      var payload = {
+        messages: msgs,
+        memories: [],
+        longTerm: typeof buildMemoryPayload === "function" ? buildMemoryPayload() : longTerm.slice(-20),
+        personality: mode,
+        values: settings.values,
+        goals: settings.selfNote,
+        useSearch: true,
+        image: frame ? { mimeType: frame.mimeType, data: frame.data } : null
+      };
+      var res = await fetch(url + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var answer = String(data.reply || "");
+      if (typeof stripVoiceDirectives === "function") answer = stripVoiceDirectives(answer);
+      if (typeof stripAvatarTags === "function") answer = stripAvatarTags(answer);
+      setCallStatus(answer.slice(0, 160));
+      if (frame) setLiveCaption(answer);
+      if (!current()) newChat();
+      var c = current();
+      if (c) {
+        c.messages.push({ role: "user", text: said, imagePreview: frame ? frame.preview : undefined });
+        c.messages.push({ role: "assistant", text: answer });
+        saveChats();
+      }
+      setOrbState("speaking");
+      speakText(answer, function () {
+        liveBusy = false;
+        setOrbState(liveMicOn ? "listening" : "");
+        if (liveMode === "call" && liveMicOn) {
+          setTimeout(function () { startLiveListen(); }, 350);
+        }
+      });
+    } catch (e) {
+      liveBusy = false;
+      setCallStatus("Error: " + (e.message || e));
+      if (liveMode === "call" && liveMicOn) setTimeout(startLiveListen, 800);
+    }
+  }
+  async function openLive(mode) {
+    // mode: camera | call (videocall)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast("Cámara no disponible");
+      return;
+    }
+    liveMode = mode;
+    liveBusy = false;
+    liveMicOn = true;
+    liveCamOn = true;
+    var ov = el("liveOverlay");
+    if (ov) ov.classList.add("on");
+    el("liveModeLabel").textContent = mode === "call" ? "Videollamada" : "Cámara en vivo";
+    var video = el("liveVideo");
+    var orbWrap = el("callOrbWrap");
+    var st = el("callStatus");
+    // Always show full camera for both modes
+    if (video) {
+      video.style.display = "block";
+      video.style.opacity = "1";
+    }
+    if (mode === "call") {
+      if (orbWrap) orbWrap.style.display = "flex"; // small corner orb
+      if (st) st.style.display = "block";
+      setCallStatus("Videollamada — te veo en vivo");
+      setOrbState("listening");
+      setLiveCaption("");
+    } else {
+      if (orbWrap) orbWrap.style.display = "none";
+      if (st) st.style.display = "none";
+      setLiveCaption("Cámara en vivo — toca ✨ para que Nova describa lo que ve ahora.");
+    }
+    var facing = mode === "call" ? "user" : "environment";
+    var ok = await startLiveStream(facing);
+    if (!ok) {
+      toast("Activa el permiso de cámara");
+    }
+    if (mode === "call") startLiveListen();
+  }
+  function closeLive() {
+    liveMode = null;
+    liveBusy = false;
+    stopLiveRec();
+    stopLiveStream();
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    var ov = el("liveOverlay");
+    if (ov) ov.classList.remove("on");
+    setLiveCaption("");
+    setOrbState("");
+    setCallStatus("");
+  }
+  function toggleLiveCam() {
+    liveCamOn = !liveCamOn;
+    var video = el("liveVideo");
+    var btn = el("liveCamToggle");
+    if (btn) btn.classList.toggle("on", liveCamOn);
+    if (!liveCamOn) {
+      stopLiveStream();
+      if (video) video.style.display = "none";
+    } else {
+      startLiveStream(liveFacing).then(function (ok) {
+        if (video) {
+          video.style.display = ok ? "block" : "none";
+          video.style.opacity = liveMode === "call" ? "0.35" : "1";
+        }
+      });
+    }
+  }
+  function toggleLiveMic() {
+    liveMicOn = !liveMicOn;
+    var btn = el("liveMicToggle");
+    if (btn) btn.classList.toggle("on", liveMicOn);
+    if (!liveMicOn) {
+      stopLiveRec();
+      setOrbState("");
+      setCallStatus("Mic off");
+    } else if (liveMode === "call") {
+      startLiveListen();
+    }
+  }
+  function flipLiveCam() {
+    liveFacing = liveFacing === "environment" ? "user" : "environment";
+    if (liveCamOn) startLiveStream(liveFacing);
+  }
+
+  function bind() {
+    click("menuBtn", function () {
+      var sb = document.querySelector(".sidebar");
+      if (!sb) return;
+      if (sb.classList.contains("drawer-open")) {
+        sb.classList.remove("drawer-open");
+      } else {
+        sb.classList.add("drawer-open");
+      }
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && liveMode) { e.preventDefault(); closeLive(); }
+    });
+
+    var form = el("composer"); if (form) form.addEventListener("submit", function (e) { e.preventDefault(); send(); });
+    var sendBtn = el("send"); if (sendBtn) sendBtn.addEventListener("click", function (e) { e.preventDefault(); send(); });
+    var prompt = el("prompt"); if (prompt) { prompt.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }); prompt.addEventListener("input", function () { prompt.style.height = "auto"; prompt.style.height = Math.min(prompt.scrollHeight, 140) + "px"; }); }
+    var ms = el("modeSelect"); if (ms) { ms.value = mode; ms.onchange = function () { mode = ms.value; store.set("mode", mode); toast("Modo: " + mode); }; }
+    function click(id, fn) { var n = el(id); if (n) n.onclick = fn; }
+    click("newChat", newChat);
+    click("memoryBtn", function () { openModal("memoryModal"); });
+    click("settingsBtn", function () { openModal("settingsModal"); });
+    click("authBtn", function () { refreshAuthUI(); openModal("authModal"); });
+    click("btnGoogle", function () { startOAuth("google"); });
+    click("btnGithub", function () { startOAuth("github"); });
+    click("btnLocalAuth", signInLocal);
+    click("btnSignOut", signOut);
+    click("avatarBtn", toggleAvatarPanel);
+    click("avatarClose", closeAvatarPanel);
+    document.querySelectorAll(".avatar-controls [data-expr]").forEach(function (b) {
+      b.onclick = function () { setAvatarExpression(b.getAttribute("data-expr")); };
+    });
+    click("mobileSettings", function () { openModal("settingsModal"); });
+    click("btnMic", dictationOnce);
+    click("btnCamera", function () { openLive("camera"); });
+    click("btnCall", function () { openLive("call"); });
+    click("liveHang", closeLive);
+    click("liveExitFab", closeLive);
+    click("liveSnap", function () { analyzeLiveFrame(liveMode === "call" ? "Qué ves ahora?" : "Describe lo que ves con detalle útil y natural."); });
+    click("liveCamToggle", toggleLiveCam);
+    click("liveMicToggle", toggleLiveMic);
+    click("liveFlip", flipLiveCam);
+    click("npClose", hideNowPlaying);
+    click("btnParlant", toggleParlant);
+    click("btnImg", function () { var f = el("fileImg"); if (f) f.click(); });
+    click("btnClearImg", clearPendingImage);
+    click("btnMusic", function () {
+      var p = el("prompt");
+      if (p && !p.value.trim()) p.value = "pon musica de ";
+      if (p) p.focus();
+      toast("Escribe la cancion o artista y envia");
+    });
+    click("btnGen", function () {
+      var p = el("prompt");
+      if (p && !p.value.trim()) p.value = "genera una imagen de ";
+      if (p) p.focus();
+      toast("Escribe que imagen quieres y envia");
+    });
+    var fileImg = el("fileImg");
+    if (fileImg) {
+      fileImg.onchange = function () {
+        if (this.files && this.files[0]) setPendingImage(this.files[0]);
+        this.value = "";
+      };
+    }
+
+    click("ltAdd", function () { var v = (el("ltInput").value || "").trim(); if (!v) return; if (longTerm.indexOf(v) < 0) longTerm.push(v); store.set("longTerm", longTerm); el("ltInput").value = ""; renderLt(); toast("Guardado"); });
+    click("ltClear", function () { if (confirm("Borrar memoria?")) { longTerm = []; store.set("longTerm", longTerm); renderLt(); } });
+    click("btnTestVoice", function () {
+      autoSpeak = true; store.set("autoSpeak", true);
+      var cb = el("optSpeak"); if (cb) cb.checked = true;
+      speakText("Hola, soy Nova. Asi suena mi voz.");
+      toast("Probando voz");
+    });
+    click("saveSettings", function () {
+      try {
+        var valuesEl = el("values");
+        var noteEl = el("selfNote");
+        var urlEl = el("apiUrl");
+        settings = {
+          values: (valuesEl && valuesEl.value ? valuesEl.value : "").trim() || "honestidad, curiosidad",
+          selfNote: (noteEl && noteEl.value ? noteEl.value : "").trim() || "ayudar"
+        };
+        store.set("settings", settings);
+
+        var u = (urlEl && urlEl.value ? urlEl.value : DEFAULT_API).trim().replace(/\/$/, "");
+        if (!u) u = DEFAULT_API;
+        apiUrl = u;
+        store.set("apiUrl", u);
+
+        var speakCb = el("optSpeak");
+        autoSpeak = !!(speakCb && speakCb.checked);
+        store.set("autoSpeak", autoSpeak);
+
+        var tm = el("toneMood");
+        if (tm) { toneMood = tm.value || "neutral"; store.set("toneMood", toneMood); }
+
+        var vt = el("voiceType");
+        var vn = el("voiceName");
+        voiceType = (vt && vt.value) || "auto";
+        voiceName = (vn && vn.value) || "";
+        store.set("voiceType", voiceType);
+        store.set("voiceName", voiceName);
+
+        // verify write
+        var check = store.get("apiUrl", "");
+        if (check !== u) {
+          toast("No se pudo guardar (almacenamiento bloqueado)");
+          return;
+        }
+
+        closeModal("settingsModal");
+        toast(autoSpeak ? "Guardado · voz ON" : "Guardado · activa 'Leer respuestas' para oír");
+
+        // test voice only if user wants speech
+        if (autoSpeak) {
+          speakText("Guardado. Nova te escucha.");
+        }
+      } catch (err) {
+        console.error(err);
+        toast("Error al guardar: " + (err && err.message ? err.message : err));
+      }
+    });
+    document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { closeModal(b.getAttribute("data-close")); }; });
+    document.querySelectorAll(".modal-backdrop").forEach(function (m) { m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("open"); }); });
+    if (!chats.length) newChat(); else { currentId = chats[0].id; renderChat(); }
+    console.log("Nova", VERSION, "ready", apiUrl);
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function () { populateVoiceSelect(); };
+    try { listVoices(); } catch (e) {}
+  }
+  consumeAuthCallback();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind); else bind();
+})();
+</script>
+</body>
+</html>
